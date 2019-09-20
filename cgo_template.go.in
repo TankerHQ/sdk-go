@@ -1,0 +1,8 @@
+// This file has been generated. Do not edit.
+package core
+
+/*
+#cgo CFLAGS: -I${SRCDIR}/ctanker/{{GO_OS}}-{{GO_ARCH}}/include
+#cgo LDFLAGS: -L${SRCDIR}/ctanker/{{GO_OS}}-{{GO_ARCH}}/lib {{CONAN_LIBS}}
+*/
+import "C"

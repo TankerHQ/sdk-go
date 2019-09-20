@@ -1,0 +1,6 @@
+[requires]
+tanker/2.1.0@tanker/stable
+
+[imports]
+lib, *.a -> lib
+include, *ctanker* -> include

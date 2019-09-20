@@ -1,0 +1,117 @@
+import argparse
+import os
+import sys
+import json
+
+from path import Path
+
+import ci
+import ci.conan
+import ci.cpp
+import cli_ui as ui
+
+
+# TODO mingw
+PROFILE_OS_ARCHS = {"gcc8": ["linux", "amd64"], "macos": ["darwin", "amd64"], "mingw32": ["windows", "386"]}
+
+
+def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -> None:
+    cwd = Path.getcwd()
+    conanfile = cwd / "conanfile-local.txt"
+
+    install_args = []
+    if use_tanker == "deployed":
+        conanfile = cwd / "conanfile-deployed.txt"
+    elif use_tanker == "local":
+        ci.conan.export(
+            src_path=Path.getcwd().parent / "sdk-native", ref_or_channel="tanker/dev"
+        )
+        install_args += ["--build", "tanker"]
+    elif use_tanker == "same-as-branch":
+        workspace = ci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
+        src_path = workspace / "sdk-go"
+        ci.conan.export(src_path=workspace / "sdk-native", ref_or_channel="tanker/dev")
+        install_args += ["--build", "tanker"]
+    ci.conan.run(
+        "install", conanfile,
+        "--update",
+        "--profile", profile,
+        "--install-folder", install_folder,
+        "--generator", "json",
+        *install_args
+    )
+
+
+def get_deps_link_flags(install_path: Path) -> str:
+    json_file = install_path / "conanbuildinfo.json"
+    conan_info = json.loads(json_file.text())
+    deps = []
+    for dep in conan_info["dependencies"]:
+        deps += dep["libs"]
+    return " ".join([f"-l{d}" for d in deps])
+
+
+def generate_cgo_file(install_path: Path, go_os: str, go_arch: str) -> None:
+    link_flags = get_deps_link_flags(install_path)
+    template_file = Path.getcwd() / "cgo_template.go.in"
+    # having go_os and go_arch in the filename acts as an implicit build rule
+    # e.g. only build cgo_linux_amd64.go on Linux amd64
+    dst_file = Path.getcwd() / "core" / f"cgo_{go_os}_{go_arch}.go"
+    ui.info_1(f"Generating {dst_file}")
+    template_file.copy(dst_file)
+    content = dst_file.text()
+    content = content.replace("{{GO_OS}}", go_os)
+    content = content.replace("{{GO_ARCH}}", go_arch)
+    content = content.replace("{{CONAN_LIBS}}", link_flags)
+    with open(dst_file, mode="w") as f:
+        f.write(content)
+
+
+def install_deps(profile: str, use_tanker: str) -> None:
+    profile_prefix = profile.split("-")[0]
+    go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
+    deps_install_path = Path.getcwd() / "core/ctanker" / f"{go_os}-{go_arch}"
+
+    install_tanker_native(profile, deps_install_path , use_tanker)
+    generate_cgo_file(deps_install_path, go_os, go_arch)
+
+
+def build_and_check() -> None:
+    ci.run("go", "test", "-v", "-count=1", "./...")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--isolate-conan-user-home",
+        action="store_true",
+        dest="home_isolation",
+        default=False,
+    )
+    subparsers = parser.add_subparsers(title="subcommands", dest="command")
+
+    install_deps_parser = subparsers.add_parser("install-deps")
+    install_deps_parser.add_argument(
+        "--use-tanker", choices=["deployed", "local", "same-as-branch"], default="local"
+    )
+    install_deps_parser.add_argument("--profile", required=True)
+
+    build_and_test_parser = subparsers.add_parser("build-and-test")
+
+    args = parser.parse_args()
+    if args.home_isolation:
+        ci.conan.set_home_isolation()
+
+    ci.conan.update_config()
+
+    if args.command == "install-deps":
+        install_deps(args.profile, args.use_tanker)
+    elif args.command == "build-and-test":
+        build_and_check()
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

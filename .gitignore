@@ -1,0 +1,4 @@
+.venv/
+*.egg-info/
+core/ctanker/
+core/cgo_*
