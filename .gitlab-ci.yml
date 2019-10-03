@@ -4,6 +4,7 @@ before_script:
 stages:
   - build
   - check
+  - deploy
 
 .check:
   stage: check
@@ -14,6 +15,11 @@ check/linux:
   script:
     - dmenv run -- python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile gcc8-release
     - dmenv run -- python run-ci.py build-and-test
+  artifacts:
+    paths:
+      - core/cgo_linux_amd64.go
+      - core/ctanker/linux-amd64/include
+      - core/ctanker/linux-amd64/lib
 
 check/macos:
   extends: .check
@@ -21,10 +27,14 @@ check/macos:
   script:
     - dmenv run -- python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile macos-release
     - dmenv run -- python run-ci.py build-and-test
+  artifacts:
+    paths:
+      - core/cgo_darwin_amd64.go
+      - core/ctanker/darwin-amd64/include
+      - core/ctanker/darwin-amd64/lib
 
-build/windows:
+cross-build/windows:
   stage: build
-  # not a typo
   tags: [linux]
   script:
     - dmenv run -- python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile mingw32-release
@@ -67,3 +77,11 @@ check/deployed-windows:
   script:
     - dmenv run -- python run-ci.py --isolate-conan-user-home install-deps --use-tanker=deployed --profile mingw32-release
     - dmenv run -- python run-ci.py build-and-test
+
+
+deploy:
+ stage: deploy
+ when: manual
+ tags: [linux]
+ script:
+  - dmenv run -- python run-ci.py deploy --version $VERSION

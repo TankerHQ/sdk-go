@@ -10,9 +10,11 @@ import ci.conan
 import ci.cpp
 import cli_ui as ui
 
-
-# TODO mingw
-PROFILE_OS_ARCHS = {"gcc8": ["linux", "amd64"], "macos": ["darwin", "amd64"], "mingw32": ["windows", "386"]}
+PROFILE_OS_ARCHS = {
+    "gcc8": ["linux", "amd64"],
+    "macos": ["darwin", "amd64"],
+    "mingw32": ["windows", "386"],
+}
 
 
 def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -> None:
@@ -32,14 +34,16 @@ def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -
         src_path = workspace / "sdk-go"
         ci.conan.export(src_path=workspace / "sdk-native", ref_or_channel="tanker/dev")
         install_args += ["--build", "tanker"]
+    # fmt: off
     ci.conan.run(
         "install", conanfile,
         "--update",
         "--profile", profile,
         "--install-folder", install_folder,
         "--generator", "json",
-        *install_args
+        *install_args,
     )
+    # fmt: on
 
 
 def get_deps_link_flags(install_path: Path) -> str:
@@ -72,12 +76,33 @@ def install_deps(profile: str, use_tanker: str) -> None:
     go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
     deps_install_path = Path.getcwd() / "core/ctanker" / f"{go_os}-{go_arch}"
 
-    install_tanker_native(profile, deps_install_path , use_tanker)
+    install_tanker_native(profile, deps_install_path, use_tanker)
     generate_cgo_file(deps_install_path, go_os, go_arch)
 
 
 def build_and_check() -> None:
     ci.run("go", "test", "-v", "-count=1", "./...")
+
+
+def make_bump_commit(version: str):
+    ci.bump.bump_files(version)
+    cwd = Path.getcwd()
+    cgo_sources = (cwd / "core").files("cgo_*.go")
+    for cgo_source in cgo_sources:
+        ci.git.run(cwd, "add", "--force", cgo_source)
+    ctanker_files = (cwd / "core/ctanker").walkfiles()
+    for ctanker_file in ctanker_files:
+        ci.git.run(cwd, "add", "--force", ctanker_file)
+    ci.git.run(cwd, "commit", "--message", f"add binary files for version v{version}")
+
+
+def deploy(*, version: str) -> None:
+    cwd = Path.getcwd()
+    tag = "v" + version
+    make_bump_commit(version)
+    ci.git.run(cwd, "tag", tag)
+    github_url = "git@github.com:TankerHQ/sdk-go"
+    ci.git.run(cwd, "push", "--dry-run", github_url, f"{tag}:{tag}")
 
 
 def main() -> None:
@@ -98,16 +123,21 @@ def main() -> None:
 
     build_and_test_parser = subparsers.add_parser("build-and-test")
 
+    deploy_parser = subparsers.add_parser("deploy")
+    deploy_parser.add_argument("--version", required=True)
+
     args = parser.parse_args()
     if args.home_isolation:
         ci.conan.set_home_isolation()
 
-    ci.conan.update_config()
-
     if args.command == "install-deps":
+        ci.conan.update_config()
         install_deps(args.profile, args.use_tanker)
     elif args.command == "build-and-test":
+        ci.conan.update_config()
         build_and_check()
+    elif args.command == "deploy":
+        deploy(version=args.version)
     else:
         parser.print_help()
         sys.exit(1)
