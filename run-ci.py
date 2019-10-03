@@ -85,6 +85,7 @@ def build_and_check() -> None:
 
 
 def make_bump_commit(version: str):
+    ci.git.run(cwd, "lfs", "install")
     ci.bump.bump_files(version)
     cwd = Path.getcwd()
     cgo_sources = (cwd / "core").files("cgo_*.go")
