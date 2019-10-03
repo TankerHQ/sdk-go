@@ -102,7 +102,7 @@ def deploy(*, version: str) -> None:
     make_bump_commit(version)
     ci.git.run(cwd, "tag", tag)
     github_url = "git@github.com:TankerHQ/sdk-go"
-    ci.git.run(cwd, "push", "--dry-run", github_url, f"{tag}:{tag}")
+    ci.git.run(cwd, "push", github_url, f"{tag}:{tag}")
 
 
 def main() -> None:
