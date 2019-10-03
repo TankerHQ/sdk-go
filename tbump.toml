@@ -9,6 +9,11 @@ regex = '''
   (?P<minor>\d+)
   \.
   (?P<patch>\d+)
+  (
+    -
+    (?P<channel>alpha|beta|r)
+    (?P<release>\d+)
+  )?
   '''
 
 [git]

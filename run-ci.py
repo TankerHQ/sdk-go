@@ -87,6 +87,7 @@ def build_and_check() -> None:
 def make_bump_commit(version: str):
     ci.bump.bump_files(version)
     cwd = Path.getcwd()
+    ci.git.run(cwd, "lfs", "install")
     cgo_sources = (cwd / "core").files("cgo_*.go")
     for cgo_source in cgo_sources:
         ci.git.run(cwd, "add", "--force", cgo_source)
@@ -102,7 +103,7 @@ def deploy(*, version: str) -> None:
     make_bump_commit(version)
     ci.git.run(cwd, "tag", tag)
     github_url = "git@github.com:TankerHQ/sdk-go"
-    ci.git.run(cwd, "push", "--dry-run", github_url, f"{tag}:{tag}")
+    ci.git.run(cwd, "push", github_url, f"{tag}:{tag}")
 
 
 def main() -> None:
