@@ -1,4 +1,4 @@
-module github.com/TankerHQ/sdk-go
+module github.com/TankerHQ/sdk-go/v2
 
 go 1.12
 

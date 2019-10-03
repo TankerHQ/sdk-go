@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/TankerHQ/sdk-go/core"
+	"github.com/TankerHQ/sdk-go/v2/core"
 )
 
 var _ = Describe("functional", func() {

@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/TankerHQ/identity-go/identity"
-	"github.com/TankerHQ/sdk-go/core"
+	"github.com/TankerHQ/sdk-go/v2/core"
 	uuid "github.com/satori/go.uuid"
 )
 
