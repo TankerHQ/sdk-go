@@ -1,3 +1,9 @@
+[license-badge]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
+[license-link]: https://opensource.org/licenses/Apache-2.0
+
+[last-commit-badge]: https://img.shields.io/github/last-commit/TankerHQ/sdk-go.svg?label=Last%20commit&logo=github
+[last-commit-link]: https://github.com/TankerHQ/sdk-go/commits/master
+
 [![License][license-badge]][license-link]
 [![Last Commit][last-commit-badge]][last-commit-link]
 
@@ -19,16 +25,125 @@ Tanker **Core** is the foundation, it provides powerful **end-to-end encryption*
 
 <details><summary>Tanker Core usage example</summary>
 
-The Core SDK takes care of all the difficult cryptography in the background, leaving you with simple high-level APIs:
+The Core SDK takes care of all the difficult cryptography in the background, leaving you with simple high-level APIs.
+The Core SDK automatically handles complex key exchanges, cryptographic operations, and identity verification for you.
+
+You can copy/paste the following example:
 
 ```go
+package main
+
 import (
-  Tanker "github.com/TankerHQ/sdk-go/core"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+
+	"github.com/TankerHQ/sdk-go/core"
 )
-// FIXME
+
+const (
+	AppID   = "<Your App ID Here>"
+	AppURL  = "https://api.tanker.io"
+	AuthURL = "https://fakeauth.tanker.io"
+)
+
+func base64ToUrlBase64(param string) (res string, err error) {
+	bin, err := base64.StdEncoding.DecodeString(param)
+	if err != nil {
+		return
+	}
+	res = base64.URLEncoding.EncodeToString(bin)
+	return
+}
+
+func GetIdentity() (identity string, err error) {
+	urlAppID, err := base64ToUrlBase64(AppID)
+	if err != nil {
+		return
+	}
+	fmt.Println("urlappID", urlAppID)
+	resp, err := http.Get(fmt.Sprintf("%s/apps/%s/disposable_private_identity", AuthURL, urlAppID))
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != 200 {
+		err = fmt.Errorf("Cannot fetch identity from server '%s'", resp.Status)
+		return
+	}
+	defer resp.Body.Close()
+	bin, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	fmt.Println(string(bin))
+	var res map[string]string
+	if err = json.Unmarshal(bin, &res); err != nil {
+		return
+	}
+	if len(res["code"]) != 0 {
+		err = fmt.Errorf("Failed to retrieve identity '%s', '%s'", res["code"], res["message"])
+		return
+	}
+	identity = res["private_permanent_identity"]
+	return
+}
+
+func main() {
+	tanker, err := core.CreateTanker(AppID, AppURL, os.TempDir())
+	if err != nil {
+		fmt.Println("Cannot create Tanker", err)
+		return
+	}
+	core.SetLogHandler(func(core.LogRecord) {})
+	aliceIdentity, err := GetIdentity()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("Identity", aliceIdentity)
+
+	status, err := tanker.Start(string(aliceIdentity))
+	if err != nil {
+		fmt.Println("Failed to start tanker", err)
+		return
+	}
+	switch status {
+	case core.TankerStatusIdentityVerificationNeeded:
+		err = tanker.VerifyIdentity(core.PassphraseVerification{"*******"})
+	case core.TankerStatusIdentityRegistrationNeeded:
+		err = tanker.RegisterIdentity(core.PassphraseVerification{"*******"})
+	}
+	if err != nil {
+		fmt.Println("Failed to register identity:", err)
+		return
+	}
+	encrypted, err := tanker.Encrypt([]byte("This is my story"), nil)
+	if err != nil {
+		fmt.Println("Failed to encrypt message", err)
+		return
+	}
+
+	message, err := tanker.Decrypt(encrypted)
+	if err != nil {
+		fmt.Println("Failed to decrypt  message", err)
+		return
+	}
+
+	fmt.Println(string(message))
+}
 ```
 
-The Core SDK automatically handles complex key exchanges, cryptographic operations, and identity verification for you.
+Before running it, set the AppID with the one you have created on your [dashbord](https://dashboard.tanker.io).
+You MUST enable the test mode for this example to work.
+
+Then:
+```bash
+go build -o example-go && ./example-go
+```
+
 </details>
 
 For more details and advanced examples, please refer to:
@@ -42,7 +157,7 @@ For more details and advanced examples, please refer to:
 End-to-end encryption requires that all users have cryptographic identities. The following packages help to handle them:
 
 Tanker **Identity** is a server side package to link Tanker identities with your users in your application backend.
-It is available in multiple languages. Check "github.com/TankerHQ/identity-go" for more details, other implementation exists for different language.
+It is available in multiple languages. Check [identity-go](https://github.com/TankerHQ/identity-go) for more details, other implementation exists for different language.
 
 ## Contributing
 
