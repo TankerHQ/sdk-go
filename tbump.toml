@@ -22,4 +22,4 @@ tag_template = "v{new_version}"
 
 [[file]]
 src = "core/core.go"
-search = "current_version := \"{current_version}\""
+search = 'currentVersion := "{current_version}"'
