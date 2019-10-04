@@ -5,7 +5,7 @@ package core
 
 void* tanker_then_handler_proxy(tanker_future_t*, void *v);
 
-static tanker_future_t *_tanker_future_then(tanker_future_t *fut, void* user_data) {
+static void _tanker_future_then(tanker_future_t *fut, void* user_data) {
 	tanker_future_t *thenFut = tanker_future_then(fut, tanker_then_handler_proxy, user_data);
 	tanker_future_destroy(fut);
 	tanker_future_destroy(thenFut);
