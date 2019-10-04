@@ -40,12 +40,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"log"
 
-	"github.com/TankerHQ/sdk-go/core"
+	"github.com/TankerHQ/sdk-go/v2/core"
 )
 
 const (
-	AppID   = "<Your App ID Here>"
+	AppID   = <your app id>
 	AppURL  = "https://api.tanker.io"
 	AuthURL = "https://fakeauth.tanker.io"
 )
@@ -64,7 +65,6 @@ func GetIdentity() (identity string, err error) {
 	if err != nil {
 		return
 	}
-	fmt.Println("urlappID", urlAppID)
 	resp, err := http.Get(fmt.Sprintf("%s/apps/%s/disposable_private_identity", AuthURL, urlAppID))
 	if err != nil {
 		return
@@ -78,7 +78,6 @@ func GetIdentity() (identity string, err error) {
 	if err != nil {
 		return
 	}
-	fmt.Println(string(bin))
 	var res map[string]string
 	if err = json.Unmarshal(bin, &res); err != nil {
 		return
@@ -92,23 +91,23 @@ func GetIdentity() (identity string, err error) {
 }
 
 func main() {
+	fmt.Println("Creating tanker ...")
 	tanker, err := core.CreateTanker(AppID, AppURL, os.TempDir())
 	if err != nil {
-		fmt.Println("Cannot create Tanker", err)
-		return
+		log.Fatal("Could not create Tanker", err)
 	}
 	core.SetLogHandler(func(core.LogRecord) {})
+	fmt.Println("Fetching identity ...")
 	aliceIdentity, err := GetIdentity()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal("Could not get identity")
 		return
 	}
-	fmt.Println("Identity", aliceIdentity)
 
+	fmt.Println("Starting tanker ...")
 	status, err := tanker.Start(string(aliceIdentity))
 	if err != nil {
-		fmt.Println("Failed to start tanker", err)
-		return
+		log.Fatal("Could not start tanker", err)
 	}
 	switch status {
 	case core.TankerStatusIdentityVerificationNeeded:
@@ -117,22 +116,28 @@ func main() {
 		err = tanker.RegisterIdentity(core.PassphraseVerification{"*******"})
 	}
 	if err != nil {
-		fmt.Println("Failed to register identity:", err)
-		return
-	}
-	encrypted, err := tanker.Encrypt([]byte("This is my story"), nil)
-	if err != nil {
-		fmt.Println("Failed to encrypt message", err)
-		return
+		log.Fatal("Could not register identity:", err)
 	}
 
-	message, err := tanker.Decrypt(encrypted)
+	message := "This is my story"
+	fmt.Println("Encrypting message ...")
+	encrypted, err := tanker.Encrypt([]byte(message), nil)
 	if err != nil {
-		fmt.Println("Failed to decrypt  message", err)
-		return
+		log.Fatal("Failed to encrypt message", err)
 	}
 
-	fmt.Println(string(message))
+	fmt.Println("Decrypting message ...")
+	clearBytes, err := tanker.Decrypt(encrypted)
+	if err != nil {
+		log.Fatal("Failed to decrypt  message", err)
+	}
+
+    clearText := string(clearBytes)
+	if clearText != message {
+		log.Fatal("Unexpected decrypted message: got '%s', want '%s'", clearText, message)
+	}
+
+	fmt.Println("Success!")
 }
 ```
 
