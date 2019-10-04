@@ -86,6 +86,7 @@ def build_and_check() -> None:
 
 def make_bump_commit(version: str):
     ci.bump.bump_files(version)
+    ci.git.run(cwd, "add", "--update")
     cwd = Path.getcwd()
     cgo_sources = (cwd / "core").files("cgo_*.go")
     for cgo_source in cgo_sources:
