@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/TankerHQ/identity-go/identity"
-	"github.com/TankerHQ/sdk-go/core"
+	"github.com/TankerHQ/sdk-go/v2/core"
 )
 
 func randomBytes(size int) []byte {
@@ -30,6 +30,14 @@ var _ = Describe("functional", func() {
 		Expect(session.GetStatus()).To(Equal(core.TankerStatusReady))
 		Expect(session.Stop()).To(Succeed())
 		Expect(session.GetStatus()).To(Equal(core.TankerStatusStopped))
+	})
+
+	It("Returns a proper error when it fails", func() {
+		_, err := core.CreateTanker("", TankerUrl, "/tmp")
+		Expect(err).To(HaveOccurred())
+		terror, ok := (err).(core.Error)
+		Expect(ok).To(BeTrue())
+		Expect(terror.Code()).To(Equal(core.ErrorInternalError))
 	})
 
 	It("Starts and stops a session twice", func() {
@@ -104,7 +112,7 @@ var _ = Describe("functional", func() {
 		Expect(decrypted).To(Equal(clearData))
 	})
 
-	It("encrypts and shares with bob", func() {
+	It("Encrypts and shares with bob", func() {
 		alice := TestApp.CreateUser()
 		aliceLaptop, _ := alice.CreateDevice()
 		aliceSession, _ := aliceLaptop.Start()
@@ -120,7 +128,7 @@ var _ = Describe("functional", func() {
 		Expect(decrypted).To(Equal(clearData))
 	})
 
-	It("encrypts then shares with bob", func() {
+	It("Encrypts then shares with bob", func() {
 		alice := TestApp.CreateUser()
 		aliceLaptop, _ := alice.CreateDevice()
 		aliceSession, _ := aliceLaptop.Start()

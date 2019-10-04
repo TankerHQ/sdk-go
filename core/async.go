@@ -14,7 +14,6 @@ static tanker_future_t *_tanker_future_then(tanker_future_t *fut, void* user_dat
 import "C"
 
 import (
-	"errors"
 	"unsafe"
 
 	gopointer "github.com/mattn/go-pointer"
@@ -33,7 +32,8 @@ func tanker_then_handler_proxy(fut *C.tanker_future_t, v unsafe.Pointer) unsafe.
 	gopointer.Unref(v)
 	err := C.tanker_future_get_error(fut)
 	if err != nil {
-		*tan <- futureResult{err: errors.New(C.GoString(err.message))}
+		terror := newError(ErrorCode(err.code), C.GoString(err.message))
+		*tan <- futureResult{err: terror}
 		return nil
 	}
 	*tan <- futureResult{result: C.tanker_future_get_voidptr(fut)}
