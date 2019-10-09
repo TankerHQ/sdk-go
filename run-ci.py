@@ -28,12 +28,12 @@ def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -
         ci.conan.export(
             src_path=Path.getcwd().parent / "sdk-native", ref_or_channel="tanker/dev"
         )
-        install_args += ["--build", "tanker"]
+        install_args += ["--build", "missing"]
     elif use_tanker == "same-as-branch":
         workspace = ci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
         src_path = workspace / "sdk-go"
         ci.conan.export(src_path=workspace / "sdk-native", ref_or_channel="tanker/dev")
-        install_args += ["--build", "tanker"]
+        install_args += ["--build", "missing"]
     # fmt: off
     ci.conan.run(
         "install", conanfile,
@@ -130,12 +130,11 @@ def main() -> None:
     args = parser.parse_args()
     if args.home_isolation:
         ci.conan.set_home_isolation()
+        ci.conan.update_config()
 
     if args.command == "install-deps":
-        ci.conan.update_config()
         install_deps(args.profile, args.use_tanker)
     elif args.command == "build-and-test":
-        ci.conan.update_config()
         build_and_check()
     elif args.command == "deploy":
         deploy(version=args.version)
