@@ -130,12 +130,11 @@ def main() -> None:
     args = parser.parse_args()
     if args.home_isolation:
         ci.conan.set_home_isolation()
+        ci.conan.update_config()
 
     if args.command == "install-deps":
-        ci.conan.update_config()
         install_deps(args.profile, args.use_tanker)
     elif args.command == "build-and-test":
-        ci.conan.update_config()
         build_and_check()
     elif args.command == "deploy":
         deploy(version=args.version)
