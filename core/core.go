@@ -65,7 +65,7 @@ func (t *Tanker) GetDeviceList() ([]DeviceDescription, error) {
 }
 
 func Version() string {
-	currentVersion := "dev"
+	currentVersion := "2.1.0-beta6"
 	return currentVersion
 }
 
