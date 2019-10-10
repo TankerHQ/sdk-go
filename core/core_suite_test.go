@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,20 +15,26 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+type TankerConfig struct {
+	URL     string `json:"url"`
+	IDToken string `json:"idToken"`
+}
+
 var (
-	TankerIDToken = os.Getenv("TANKER_TOKEN")
-	TankerUrl     = os.Getenv("TANKER_URL")
+	tankerConfigFilePath = os.Getenv("TANKER_CONFIG_FILEPATH")
+	tankerConfigName     = os.Getenv("TANKER_CONFIG_NAME")
+	Config               TankerConfig
+	TestApp              *App
 )
 
 type App struct {
 	AdminSession *core.Admin
 	Descriptor   *core.AppDescriptor
+	Config       TankerConfig
 }
 
-var TestApp *App
-
-func CreateApp() (*App, error) {
-	AdminSession, err := core.CreateAdmin(TankerUrl, TankerIDToken)
+func CreateApp(config TankerConfig) (*App, error) {
+	AdminSession, err := core.CreateAdmin(config.URL, config.IDToken)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +42,7 @@ func CreateApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &App{AdminSession, descriptor}, nil
+	return &App{AdminSession, descriptor, config}, nil
 }
 
 func (app *App) GetVerificationCode(email string) (*string, error) {
@@ -67,7 +74,7 @@ func (app App) CreateUser() User {
 	publicIdentity, _ := identity.GetPublicIdentity(*userIdentity)
 	return User{
 		AppID:          app.Descriptor.ID,
-		Url:            TankerUrl,
+		Url:            app.Config.URL,
 		UserID:         userID,
 		Identity:       *userIdentity,
 		PublicIdentity: *publicIdentity,
@@ -77,6 +84,27 @@ func (app App) CreateUser() User {
 type Device struct {
 	User
 	Path string
+}
+
+func loadConfig() (*TankerConfig, error) {
+	file, err := os.Open(tankerConfigFilePath)
+	if err != nil {
+		return nil, err
+	}
+	content, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	var configs map[string]interface{}
+	err = json.Unmarshal(content, &configs)
+	if err != nil {
+		return nil, err
+	}
+	config, ok := configs[tankerConfigName].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Invalid config name %s", tankerConfigName)
+	}
+	return &TankerConfig{URL: config["url"].(string), IDToken: config["idToken"].(string)}, nil
 }
 
 func (user User) CreateDevice() (*Device, error) {
@@ -119,8 +147,11 @@ func StartTankerSession(tanker *core.Tanker, identity string) (status core.Statu
 }
 
 var _ = BeforeSuite(func() {
-	var err error
-	TestApp, err = CreateApp()
+	config, err := loadConfig()
+	if err != nil {
+		Fail(err.Error())
+	}
+	TestApp, err = CreateApp(*config)
 	if err != nil {
 		Fail(err.Error())
 	}
@@ -138,8 +169,8 @@ func TestSDK(t *testing.T) {
 	p := func(record core.LogRecord) {
 		fmt.Printf("[%c]{%s}'%s+%d': %s\n", record.Level, record.Category, record.File, record.Line, record.Message)
 	}
-	if len(TankerIDToken) == 0 || len(TankerUrl) == 0 {
-		panic("TANKER_TOKEN or TANKER_URL not set")
+	if len(tankerConfigFilePath) == 0 || len(tankerConfigName) == 0 {
+		panic("Tanker test config is invalid")
 	}
 	core.SetLogHandler(p)
 	RegisterFailHandler(Fail)
