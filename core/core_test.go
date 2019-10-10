@@ -33,7 +33,7 @@ var _ = Describe("functional", func() {
 	})
 
 	It("Returns a proper error when it fails", func() {
-		_, err := core.CreateTanker("", TankerUrl, "/tmp")
+		_, err := core.CreateTanker("", Config.URL, "/tmp")
 		Expect(err).To(HaveOccurred())
 		terror, ok := (err).(core.Error)
 		Expect(ok).To(BeTrue())

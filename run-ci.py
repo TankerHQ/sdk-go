@@ -81,6 +81,8 @@ def install_deps(profile: str, use_tanker: str) -> None:
 
 
 def build_and_check() -> None:
+    os.environ["TANKER_CONFIG_NAME"] = "dev"
+    os.environ["TANKER_CONFIG_FILEPATH"] = ci.tanker_configs.get_path()
     ci.run("go", "test", "-v", "-count=1", "./...")
 
 
