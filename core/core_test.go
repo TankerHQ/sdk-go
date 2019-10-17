@@ -33,7 +33,7 @@ var _ = Describe("functional", func() {
 	})
 
 	It("Returns a proper error when it fails", func() {
-		_, err := core.CreateTanker("", Config.URL, "/tmp")
+		_, err := core.CreateTanker("", TestApp.Config.URL, "/tmp")
 		Expect(err).To(HaveOccurred())
 		terror, ok := (err).(core.Error)
 		Expect(ok).To(BeTrue())
@@ -153,7 +153,7 @@ var _ = Describe("functional", func() {
 		aliceLaptop, _ := alice.CreateDevice()
 		aliceSession, _ := aliceLaptop.Start()
 		bobEmail := "bob@gmail.com"
-		bobProvisional, err := identity.CreateProvisional(IdConfig, bobEmail)
+		bobProvisional, err := identity.CreateProvisional(TestApp.IdConfig, bobEmail)
 		Expect(err).ToNot(HaveOccurred())
 		clearData := randomBytes(12)
 		bobPublicProvisional, err := identity.GetPublicIdentity(*bobProvisional)
