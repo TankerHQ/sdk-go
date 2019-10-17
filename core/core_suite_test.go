@@ -15,7 +15,7 @@ import (
 var (
 	tankerConfigFilePath = os.Getenv("TANKER_CONFIG_FILEPATH")
 	tankerConfigName     = os.Getenv("TANKER_CONFIG_NAME")
-	Config               helpers.TankerConfig
+	Config               helpers.TestConfig
 	TestApp              *helpers.App
 )
 
@@ -24,7 +24,7 @@ var _ = BeforeSuite(func() {
 	if err != nil {
 		Fail(err.Error())
 	}
-	TestApp, err = helpers.CreateApp(*config)
+	TestApp, err = helpers.CreateApp(config.Server)
 	if err != nil {
 		Fail(err.Error())
 	}

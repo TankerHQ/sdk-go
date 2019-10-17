@@ -8,7 +8,7 @@ import (
 type App struct {
 	AdminSession *core.Admin
 	Descriptor   *core.AppDescriptor
-	Config       TankerConfig
+	Config       ServerConfig
 	IdConfig     identity.Config
 }
 
