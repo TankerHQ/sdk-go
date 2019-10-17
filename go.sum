@@ -1,5 +1,6 @@
 github.com/TankerHQ/identity-go v0.0.0-20190828093422-8beae1b85772 h1:iI7m4cl3/A8A/gAxyxHAYMJfUlSNkPdWvbdvs+e/8a4=
 github.com/TankerHQ/identity-go v0.0.0-20190828093422-8beae1b85772/go.mod h1:dN/VzUX06B5Mjbr8Z/J+1Vxww3U2SLzNAt8vj1aK4aA=
+github.com/TankerHQ/sdk-go v0.0.0-20191003115543-4dd294d096b8 h1:nz5xCAYBwon6uR9oZbox3dmi83RcaG2kPaIKaUTHPMU=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM=

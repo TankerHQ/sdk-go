@@ -38,13 +38,12 @@ var _ = AfterSuite(func() {
 })
 
 func TestSDK(t *testing.T) {
-	p := func(record core.LogRecord) {
-		fmt.Printf("[%c]{%s}'%s+%d': %s\n", record.Level, record.Category, record.File, record.Line, record.Message)
-	}
 	if len(tankerConfigFilePath) == 0 || len(tankerConfigName) == 0 {
 		panic("Tanker test config is invalid")
 	}
-	core.SetLogHandler(p)
+	core.SetLogHandler(func(record core.LogRecord) {
+		fmt.Printf("[%c]{%s}'%s+%d': %s\n", record.Level, record.Category, record.File, record.Line, record.Message)
+	})
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Core Test Suite")
 }
