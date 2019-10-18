@@ -1,8 +1,6 @@
 package core_test
 
 import (
-	"crypto/rand"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -10,14 +8,6 @@ import (
 	"github.com/TankerHQ/sdk-go/v2/core"
 	"github.com/TankerHQ/sdk-go/v2/helpers"
 )
-
-func randomBytes(size int) []byte {
-	bytes := make([]byte, size)
-	if _, err := rand.Read(bytes); err != nil {
-		return nil
-	}
-	return bytes
-}
 
 var _ = Describe("functional", func() {
 
@@ -121,7 +111,7 @@ var _ = Describe("functional", func() {
 		})
 
 		It("Encrypts and Decrypts", func() {
-			clearData := randomBytes(1024 * 1024 * 3)
+			clearData := helpers.RandomBytes(1024 * 1024 * 3)
 			encrypted, err := aliceSession.Encrypt(clearData, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(encrypted).ToNot(HaveLen(0))
@@ -132,7 +122,7 @@ var _ = Describe("functional", func() {
 
 		It("Encrypts and shares with bob", func() {
 			bobSession, _ := bobLaptop.Start()
-			clearData := randomBytes(1024 * 1024 * 3)
+			clearData := helpers.RandomBytes(1024 * 1024 * 3)
 			encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptOptions{Recipients: []string{bob.PublicIdentity}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(encrypted).ToNot(HaveLen(0))
@@ -143,7 +133,7 @@ var _ = Describe("functional", func() {
 
 		It("Encrypts then shares with bob", func() {
 			bobSession, _ := bobLaptop.Start()
-			clearData := randomBytes(1024 * 1024 * 3)
+			clearData := helpers.RandomBytes(1024 * 1024 * 3)
 			encrypted, err := aliceSession.Encrypt(clearData, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(encrypted).ToNot(HaveLen(0))
@@ -160,7 +150,7 @@ var _ = Describe("functional", func() {
 			bobEmail := "bob@gmail.com"
 			bobProvisional, err := identity.CreateProvisional(TestApp.IdConfig, bobEmail)
 			Expect(err).ToNot(HaveOccurred())
-			clearData := randomBytes(12)
+			clearData := helpers.RandomBytes(12)
 			bobPublicProvisional, err := identity.GetPublicIdentity(*bobProvisional)
 			Expect(err).ToNot(HaveOccurred())
 			// Trigger the creation of the provisional Identity on the Tanker Server

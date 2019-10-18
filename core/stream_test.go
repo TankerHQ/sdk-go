@@ -6,12 +6,13 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/TankerHQ/sdk-go/v2/helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 func createBigStream(size int) *bytes.Reader {
-	return bytes.NewReader(randomBytes(size))
+	return bytes.NewReader(helpers.RandomBytes(size))
 }
 
 var _ = Describe("Streams", func() {
