@@ -22,7 +22,7 @@ type VerificationMethod struct {
 
 type AttachResult struct {
 	Status Status
-	Method VerificationMethod
+	Method *VerificationMethod
 }
 
 type EmailVerification struct {
@@ -94,6 +94,21 @@ func (t *Tanker) SetVerificationMethod(verification interface{}) error {
 	return err
 }
 
+func convertVerificationMethodToTanker(cmethod *C.tanker_verification_method_t) *VerificationMethod {
+	if cmethod == nil {
+		return nil
+	}
+	var email *string
+	if cmethod.verification_method_type == C.TANKER_VERIFICATION_METHOD_EMAIL {
+		dummy := C.GoString(cmethod.email)
+		email = &dummy
+	}
+	return &VerificationMethod{
+		Type:  VerificationMethodType(cmethod.verification_method_type),
+		Email: email,
+	}
+}
+
 func (t *Tanker) GetVerificationMethods() ([]VerificationMethod, error) {
 	result, err := Await(C.tanker_get_verification_methods(t.instance))
 	if err != nil {
@@ -103,16 +118,8 @@ func (t *Tanker) GetVerificationMethods() ([]VerificationMethod, error) {
 	count := (int)(methodList.count)
 	goMethods := make([]VerificationMethod, 0, count)
 	for i := 0; i < count; i++ {
-		method := (*C.tanker_verification_method_t)(unsafe.Pointer(uintptr(unsafe.Pointer(methodList.methods)) + (unsafe.Sizeof(*methodList.methods) * uintptr(i))))
-		var email *string
-		if method.verification_method_type == C.TANKER_VERIFICATION_METHOD_EMAIL {
-			dummy := C.GoString(method.email)
-			email = &dummy
-		}
-		goMethods = append(goMethods, VerificationMethod{
-			Type:  VerificationMethodType(method.verification_method_type),
-			Email: email,
-		})
+		cmethod := (*C.tanker_verification_method_t)(unsafe.Pointer(uintptr(unsafe.Pointer(methodList.methods)) + (unsafe.Sizeof(*methodList.methods) * uintptr(i))))
+		goMethods = append(goMethods, *convertVerificationMethodToTanker(cmethod))
 	}
 	C.tanker_free_verification_method_list(methodList)
 	return goMethods, nil
@@ -126,8 +133,10 @@ func (t *Tanker) AttachProvisionalIdentity(provisionalIdentity string) (*AttachR
 		return nil, err
 	}
 	cresult := (*C.tanker_attach_result_t)(result)
+	defer C.tanker_free_attach_result(cresult)
 	attachResult := &AttachResult{
 		Status: Status(cresult.status),
+		Method: convertVerificationMethodToTanker(cresult.method),
 	}
 
 	return attachResult, err
