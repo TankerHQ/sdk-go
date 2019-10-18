@@ -20,11 +20,11 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	config, err := helpers.LoadConfig(tankerConfigFilePath, tankerConfigName)
+	Config, err := helpers.LoadConfig(tankerConfigFilePath, tankerConfigName)
 	if err != nil {
 		Fail(err.Error())
 	}
-	TestApp, err = helpers.CreateApp(config.Server)
+	TestApp, err = helpers.CreateApp(*Config)
 	if err != nil {
 		Fail(err.Error())
 	}

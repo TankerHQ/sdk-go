@@ -13,6 +13,7 @@ const (
 	VerificationMethodTypeEmail           VerificationMethodType = C.TANKER_VERIFICATION_METHOD_EMAIL
 	VerificationMethodTypePassphrase      VerificationMethodType = C.TANKER_VERIFICATION_METHOD_PASSPHRASE
 	VerificationMethodTypeVerificationKey VerificationMethodType = C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY
+	VerificationMethodTypeOidcIdToken     VerificationMethodType = C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN
 )
 
 type VerificationMethod struct {
@@ -38,9 +39,13 @@ type KeyVerification struct {
 	Key string
 }
 
+type OidcVerification struct {
+	OidcIdToken string
+}
+
 func convertVerificationToTanker(verif interface{}) *C.tanker_verification_t {
 	result := &C.tanker_verification_t{
-		version: 2,
+		version: 3,
 	}
 
 	switch t := verif.(type) {
@@ -57,6 +62,9 @@ func convertVerificationToTanker(verif interface{}) *C.tanker_verification_t {
 	case KeyVerification:
 		result.verification_method_type = C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY
 		result.verification_key = C.CString(t.Key)
+	case OidcVerification:
+		result.verification_method_type = C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN
+		result.oidc_id_token = C.CString(t.OidcIdToken)
 	}
 	return result
 }
@@ -70,12 +78,15 @@ func freeVerif(verif *C.tanker_verification_t) {
 		C.free(unsafe.Pointer(verif.passphrase))
 	case C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY:
 		C.free(unsafe.Pointer(verif.verification_key))
+	case C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN:
+		C.free(unsafe.Pointer(verif.oidc_id_token))
 	}
 }
 
 func (t *Tanker) RegisterIdentity(verification interface{}) error {
 	cverif := convertVerificationToTanker(verification)
 	defer freeVerif(cverif)
+
 	_, err := Await(C.tanker_register_identity(t.instance, cverif))
 	return err
 }

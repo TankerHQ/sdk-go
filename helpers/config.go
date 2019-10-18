@@ -32,8 +32,8 @@ type TestConfig struct {
 	Oidc   OidcConfig
 }
 
-func CreateApp(config ServerConfig) (*App, error) {
-	AdminSession, err := core.CreateAdmin(config.URL, config.IDToken)
+func CreateApp(testConfig TestConfig) (*App, error) {
+	AdminSession, err := core.CreateAdmin(testConfig.Server.URL, testConfig.Server.IDToken)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func CreateApp(config ServerConfig) (*App, error) {
 	}
 
 	idConfig := identity.Config{AppID: descriptor.ID, AppSecret: descriptor.PrivateKey}
-	return &App{AdminSession, descriptor, config, idConfig}, nil
+	return &App{AdminSession, descriptor, testConfig.Server, testConfig.Oidc, idConfig}, nil
 }
 
 func LoadConfig(configFilePath string, configName string) (*TestConfig, error) {

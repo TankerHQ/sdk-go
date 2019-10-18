@@ -85,6 +85,19 @@ func (adm *Admin) GetVerificationCode(AppID string, Email string) (*string, erro
 	return &code, nil
 }
 
+func (adm Admin) Update(AppID string, OidcClientId string, OidcProvider string) error {
+	appID := C.CString(AppID)
+	oidcClientId := C.CString(OidcClientId)
+	oidcProvider := C.CString(OidcProvider)
+	defer func() {
+		C.free(unsafe.Pointer(appID))
+		C.free(unsafe.Pointer(oidcClientId))
+		C.free(unsafe.Pointer(oidcProvider))
+	}()
+	_, err := Await(C.tanker_admin_app_update(adm.admin, appID, oidcClientId, oidcProvider))
+	return err
+}
+
 // Destroy an Admin
 func (adm Admin) Destroy() {
 	_, _ = Await(C.tanker_admin_destroy(adm.admin))
