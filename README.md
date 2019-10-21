@@ -110,9 +110,9 @@ func main() {
 		log.Fatal("Could not start tanker", err)
 	}
 	switch status {
-	case core.TankerStatusIdentityVerificationNeeded:
+	case core.StatusIdentityVerificationNeeded:
 		err = tanker.VerifyIdentity(core.PassphraseVerification{"*******"})
-	case core.TankerStatusIdentityRegistrationNeeded:
+	case core.StatusIdentityRegistrationNeeded:
 		err = tanker.RegisterIdentity(core.PassphraseVerification{"*******"})
 	}
 	if err != nil {

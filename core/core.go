@@ -13,10 +13,10 @@ import (
 type Status uint32
 
 const (
-	TankerStatusStopped Status = iota
-	TankerStatusReady
-	TankerStatusIdentityRegistrationNeeded
-	TankerStatusIdentityVerificationNeeded
+	StatusStopped Status = iota
+	StatusReady
+	StatusIdentityRegistrationNeeded
+	StatusIdentityVerificationNeeded
 )
 
 type EncryptOptions struct {
@@ -113,7 +113,7 @@ func (t *Tanker) Start(identity string) (Status, error) {
 	result, err := Await(C.tanker_start(t.instance, cidentity))
 	defer C.free(unsafe.Pointer(cidentity))
 	if err != nil {
-		return TankerStatusStopped, err
+		return StatusStopped, err
 	}
 	status := (Status)((uintptr)(result))
 	return status, nil

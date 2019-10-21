@@ -34,9 +34,9 @@ func StartTankerSession(tanker *core.Tanker, identity string) (status core.Statu
 		return
 	}
 	switch status {
-	case core.TankerStatusIdentityVerificationNeeded:
+	case core.StatusIdentityVerificationNeeded:
 		err = tanker.VerifyIdentity(core.PassphraseVerification{Passphrase: "multipass"})
-	case core.TankerStatusIdentityRegistrationNeeded:
+	case core.StatusIdentityRegistrationNeeded:
 		err = tanker.RegisterIdentity(core.PassphraseVerification{Passphrase: "multipass"})
 	}
 	return

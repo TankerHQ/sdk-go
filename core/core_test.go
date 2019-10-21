@@ -29,9 +29,9 @@ var _ = Describe("functional", func() {
 			session, err := aliceLaptop.Start()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(session).ToNot(BeNil())
-			Expect(session.GetStatus()).To(Equal(core.TankerStatusReady))
+			Expect(session.GetStatus()).To(Equal(core.StatusReady))
 			Expect(session.Stop()).To(Succeed())
-			Expect(session.GetStatus()).To(Equal(core.TankerStatusStopped))
+			Expect(session.GetStatus()).To(Equal(core.StatusStopped))
 		})
 
 		It("Returns a proper error when it fails", func() {
@@ -45,27 +45,27 @@ var _ = Describe("functional", func() {
 		It("Starts and stops a session twice", func() {
 			aliceSession, err := aliceLaptop.Start()
 			Expect(aliceSession.Stop()).To(Succeed())
-			Expect(aliceSession.GetStatus()).To(Equal(core.TankerStatusStopped))
+			Expect(aliceSession.GetStatus()).To(Equal(core.StatusStopped))
 
 			status, err := aliceSession.Start(alice.Identity)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(status).To(Equal(core.TankerStatusReady))
+			Expect(status).To(Equal(core.StatusReady))
 		})
 
 		It("Aborts Registration", func() {
 			aliceSession, err := aliceLaptop.CreateSession()
 			status, err := aliceSession.Start(alice.Identity)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(status).To(Equal(core.TankerStatusIdentityRegistrationNeeded))
+			Expect(status).To(Equal(core.StatusIdentityRegistrationNeeded))
 			Expect(aliceSession.Stop()).To(Succeed())
-			Expect(aliceSession.GetStatus()).To(Equal(core.TankerStatusStopped))
+			Expect(aliceSession.GetStatus()).To(Equal(core.StatusStopped))
 		})
 
 		// Note: crashes on Windows
 		XIt("Fails when it open the same device twice", func() {
 			session, err := aliceLaptop.Start()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(session.GetStatus()).To(Equal(core.TankerStatusReady))
+			Expect(session.GetStatus()).To(Equal(core.StatusReady))
 			_, err = aliceLaptop.Start()
 			Expect(err).To(HaveOccurred())
 		})
@@ -73,12 +73,12 @@ var _ = Describe("functional", func() {
 		It("Opens a second device with the same user", func() {
 			session, err := aliceLaptop.Start()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(session.GetStatus()).To(Equal(core.TankerStatusReady))
+			Expect(session.GetStatus()).To(Equal(core.StatusReady))
 			aliceMobile, _ := alice.CreateDevice()
 			mobile, err := aliceMobile.Start()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(mobile).ToNot(BeNil())
-			Expect(mobile.GetStatus()).To(Equal(core.TankerStatusReady))
+			Expect(mobile.GetStatus()).To(Equal(core.StatusReady))
 			Expect(mobile.Stop()).To(Succeed())
 			Expect(session.Stop()).To(Succeed())
 		})
@@ -177,14 +177,14 @@ var _ = Describe("functional", func() {
 			bobSession, _ := bobLaptop.Start()
 			attachResult, err := bobSession.AttachProvisionalIdentity(*bobProvisional)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(attachResult.Status).To(Equal(core.TankerStatusIdentityVerificationNeeded))
+			Expect(attachResult.Status).To(Equal(core.StatusIdentityVerificationNeeded))
 			code, err := TestApp.GetVerificationCode(bobEmail)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bobSession.VerifyProvisionalIdentity(core.EmailVerification{bobEmail, *code})).To(Succeed())
 
 			attachResult2, err := bobSession.AttachProvisionalIdentity(*bobProvisional)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(attachResult2.Status).To(Equal(core.TankerStatusReady))
+			Expect(attachResult2.Status).To(Equal(core.StatusReady))
 		})
 
 		It("Retrieves a user's device list", func() {

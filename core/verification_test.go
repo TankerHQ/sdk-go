@@ -50,7 +50,7 @@ func doVerification(tanker *core.Tanker, identity string, verification interface
 	if err != nil {
 		return 0, err
 	}
-	Expect(status).To(Equal(core.TankerStatusIdentityVerificationNeeded))
+	Expect(status).To(Equal(core.StatusIdentityVerificationNeeded))
 	if err = tanker.VerifyIdentity(verification); err != nil {
 		return 0, err
 	}
@@ -69,7 +69,7 @@ var _ = Describe("functional", func() {
 		aliceLaptop, _ := alice.CreateDevice()
 		session, err := aliceLaptop.CreateSession()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(session.Start(alice.Identity)).To(Equal(core.TankerStatusIdentityRegistrationNeeded))
+		Expect(session.Start(alice.Identity)).To(Equal(core.StatusIdentityRegistrationNeeded))
 		Expect(session.GenerateVerificationKey()).ToNot(BeNil())
 	})
 
@@ -121,7 +121,7 @@ var _ = Describe("functional", func() {
 
 			martineLaptopDevice, _ = martine.CreateDevice()
 			martineLaptop, _ = martineLaptopDevice.CreateSession()
-			Expect(martineLaptop.Start(martine.Identity)).To(Equal(core.TankerStatusIdentityRegistrationNeeded))
+			Expect(martineLaptop.Start(martine.Identity)).To(Equal(core.StatusIdentityRegistrationNeeded))
 
 			martinePhoneDevice, _ = martine.CreateDevice()
 			martinePhone, _ = martinePhoneDevice.CreateSession()
@@ -136,7 +136,7 @@ var _ = Describe("functional", func() {
 
 		It("Registers and verifies identity with an oidc id token", func() {
 			Expect(martineLaptop.RegisterIdentity(martineOidcVerification)).To(Succeed())
-			Expect(doVerification(martinePhone, martine.Identity, martineOidcVerification)).To(Equal(core.TankerStatusReady))
+			Expect(doVerification(martinePhone, martine.Identity, martineOidcVerification)).To(Equal(core.StatusReady))
 		})
 
 		It("Fails to verify a valid token for the wrong user", func() {
@@ -148,7 +148,7 @@ var _ = Describe("functional", func() {
 		It("Updates and verifies with an oidc token", func() {
 			Expect(martineLaptop.RegisterIdentity(core.PassphraseVerification{"*****"})).To(Succeed())
 			Expect(martineLaptop.SetVerificationMethod(martineOidcVerification)).To(Succeed())
-			Expect(martinePhone.Start(martine.Identity)).To(Equal(core.TankerStatusIdentityVerificationNeeded))
+			Expect(martinePhone.Start(martine.Identity)).To(Equal(core.StatusIdentityVerificationNeeded))
 			Expect(martinePhone.VerifyIdentity(martineOidcVerification)).To(Succeed())
 			methods, err := martinePhone.GetVerificationMethods()
 			Expect(err).ToNot(HaveOccurred())
@@ -172,7 +172,7 @@ var _ = Describe("functional", func() {
 
 			attachResult, err := martineLaptop.AttachProvisionalIdentity(*martineProvisionalIdentity)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(attachResult.Status).To(Equal(core.TankerStatusIdentityVerificationNeeded))
+			Expect(attachResult.Status).To(Equal(core.StatusIdentityVerificationNeeded))
 			Expect(attachResult.Method.Type).To(Equal(core.VerificationMethodTypeEmail))
 			Expect(attachResult.Method.Email).To(Equal(&martineEmail))
 			Expect(martineLaptop.VerifyProvisionalIdentity(martineOidcVerification)).To(Succeed())
