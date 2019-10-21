@@ -24,7 +24,7 @@ var _ = BeforeSuite(func() {
 	if err != nil {
 		Fail(err.Error())
 	}
-	TestApp, err = helpers.CreateApp(*Config)
+	TestApp, err = helpers.NewApp(*Config)
 	if err != nil {
 		Fail(err.Error())
 	}

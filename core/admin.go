@@ -23,8 +23,8 @@ type AppDescriptor struct {
 	PublicKey  string
 }
 
-// CreateAdmin creates an admin object
-func CreateAdmin(URL string, IDToken string) (*Admin, error) {
+// NewAdmin creates an admin object
+func NewAdmin(URL string, IDToken string) (*Admin, error) {
 	url := C.CString(URL)
 	token := C.CString(IDToken)
 	defer C.free(unsafe.Pointer(url))
@@ -40,8 +40,8 @@ func CreateAdmin(URL string, IDToken string) (*Admin, error) {
 	return that, nil
 }
 
-//CreateApp creates an aplication on the tanker server
-func (adm Admin) CreateApp(Name string) (*AppDescriptor, error) {
+//NewApp creates an aplication on the tanker server
+func (adm Admin) NewApp(Name string) (*AppDescriptor, error) {
 	name := C.CString(Name)
 	defer C.free(unsafe.Pointer(name))
 	result, err := await(C.tanker_admin_create_app(adm.admin, name))

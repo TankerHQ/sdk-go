@@ -32,12 +32,12 @@ type TestConfig struct {
 	Oidc   OidcConfig
 }
 
-func CreateApp(testConfig TestConfig) (*App, error) {
-	AdminSession, err := core.CreateAdmin(testConfig.Server.URL, testConfig.Server.IDToken)
+func NewApp(testConfig TestConfig) (*App, error) {
+	AdminSession, err := core.NewAdmin(testConfig.Server.URL, testConfig.Server.IDToken)
 	if err != nil {
 		return nil, err
 	}
-	descriptor, err := AdminSession.CreateApp("sdk-go-test")
+	descriptor, err := AdminSession.NewApp("sdk-go-test")
 	if err != nil {
 		return nil, err
 	}
