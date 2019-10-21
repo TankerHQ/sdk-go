@@ -29,7 +29,7 @@ func CreateAdmin(URL string, IDToken string) (*Admin, error) {
 	token := C.CString(IDToken)
 	defer C.free(unsafe.Pointer(url))
 	defer C.free(unsafe.Pointer(token))
-	result, err := Await(C.tanker_admin_connect(url, token))
+	result, err := await(C.tanker_admin_connect(url, token))
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func CreateAdmin(URL string, IDToken string) (*Admin, error) {
 func (adm Admin) CreateApp(Name string) (*AppDescriptor, error) {
 	name := C.CString(Name)
 	defer C.free(unsafe.Pointer(name))
-	result, err := Await(C.tanker_admin_create_app(adm.admin, name))
+	result, err := await(C.tanker_admin_create_app(adm.admin, name))
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (adm Admin) CreateApp(Name string) (*AppDescriptor, error) {
 func (adm Admin) DeleteApp(AppID string) error {
 	appID := C.CString(AppID)
 	defer C.free(unsafe.Pointer(appID))
-	_, err := Await(C.tanker_admin_delete_app(adm.admin, appID))
+	_, err := await(C.tanker_admin_delete_app(adm.admin, appID))
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (adm *Admin) GetVerificationCode(AppID string, Email string) (*string, erro
 	email := C.CString(Email)
 	defer C.free(unsafe.Pointer(appID))
 	defer C.free(unsafe.Pointer(email))
-	result, err := Await(C.tanker_admin_get_verification_code(adm.admin, appID, email))
+	result, err := await(C.tanker_admin_get_verification_code(adm.admin, appID, email))
 	defer C.free(result)
 	if err != nil {
 		return nil, err
@@ -94,11 +94,11 @@ func (adm Admin) Update(AppID string, OidcClientId string, OidcProvider string) 
 		C.free(unsafe.Pointer(oidcClientId))
 		C.free(unsafe.Pointer(oidcProvider))
 	}()
-	_, err := Await(C.tanker_admin_app_update(adm.admin, appID, oidcClientId, oidcProvider))
+	_, err := await(C.tanker_admin_app_update(adm.admin, appID, oidcClientId, oidcProvider))
 	return err
 }
 
 // Destroy an Admin
 func (adm Admin) Destroy() {
-	_, _ = Await(C.tanker_admin_destroy(adm.admin))
+	_, _ = await(C.tanker_admin_destroy(adm.admin))
 }

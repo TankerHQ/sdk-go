@@ -87,21 +87,21 @@ func (t *Tanker) RegisterIdentity(verification interface{}) error {
 	cverif := convertVerificationToTanker(verification)
 	defer freeVerif(cverif)
 
-	_, err := Await(C.tanker_register_identity(t.instance, cverif))
+	_, err := await(C.tanker_register_identity(t.instance, cverif))
 	return err
 }
 
 func (t *Tanker) VerifyIdentity(verification interface{}) error {
 	cverif := convertVerificationToTanker(verification)
 	defer freeVerif(cverif)
-	_, err := Await(C.tanker_verify_identity(t.instance, cverif))
+	_, err := await(C.tanker_verify_identity(t.instance, cverif))
 	return err
 }
 
 func (t *Tanker) SetVerificationMethod(verification interface{}) error {
 	cverif := convertVerificationToTanker(verification)
 	defer freeVerif(cverif)
-	_, err := Await(C.tanker_set_verification_method(t.instance, cverif))
+	_, err := await(C.tanker_set_verification_method(t.instance, cverif))
 	return err
 }
 
@@ -121,7 +121,7 @@ func convertVerificationMethodToTanker(cmethod *C.tanker_verification_method_t) 
 }
 
 func (t *Tanker) GetVerificationMethods() ([]VerificationMethod, error) {
-	result, err := Await(C.tanker_get_verification_methods(t.instance))
+	result, err := await(C.tanker_get_verification_methods(t.instance))
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (t *Tanker) GetVerificationMethods() ([]VerificationMethod, error) {
 func (t *Tanker) AttachProvisionalIdentity(provisionalIdentity string) (*AttachResult, error) {
 	cidentity := C.CString(provisionalIdentity)
 	defer C.free(unsafe.Pointer(cidentity))
-	result, err := Await(C.tanker_attach_provisional_identity(t.instance, cidentity))
+	result, err := await(C.tanker_attach_provisional_identity(t.instance, cidentity))
 	if err != nil {
 		return nil, err
 	}
@@ -154,12 +154,12 @@ func (t *Tanker) AttachProvisionalIdentity(provisionalIdentity string) (*AttachR
 }
 
 func (t *Tanker) VerifyProvisionalIdentity(verification interface{}) error {
-	_, err := Await(C.tanker_verify_provisional_identity(t.instance, convertVerificationToTanker(verification)))
+	_, err := await(C.tanker_verify_provisional_identity(t.instance, convertVerificationToTanker(verification)))
 	return err
 }
 
 func (t *Tanker) GenerateVerificationKey() (*string, error) {
-	result, err := Await(C.tanker_generate_verification_key(t.instance))
+	result, err := await(C.tanker_generate_verification_key(t.instance))
 	if err != nil {
 		return nil, err
 	}

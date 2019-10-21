@@ -93,7 +93,7 @@ func NewTanker(appID string, Url string, writablePath string) (*Tanker, error) {
 		sdk_type:      sdkgo,
 		sdk_version:   version,
 	}
-	result, err := Await(C.tanker_create(coptions))
+	result, err := await(C.tanker_create(coptions))
 	if err != nil {
 		return nil, err
 	}
@@ -104,13 +104,13 @@ func NewTanker(appID string, Url string, writablePath string) (*Tanker, error) {
 
 //Destroy destroys this tanker object
 func (t *Tanker) Destroy() error {
-	_, err := Await(C.tanker_destroy(t.instance))
+	_, err := await(C.tanker_destroy(t.instance))
 	return err
 }
 
 func (t *Tanker) Start(identity string) (Status, error) {
 	cidentity := C.CString(identity)
-	result, err := Await(C.tanker_start(t.instance, cidentity))
+	result, err := await(C.tanker_start(t.instance, cidentity))
 	defer C.free(unsafe.Pointer(cidentity))
 	if err != nil {
 		return StatusStopped, err
@@ -120,7 +120,7 @@ func (t *Tanker) Start(identity string) (Status, error) {
 }
 
 func (t *Tanker) Stop() error {
-	_, err := Await(C.tanker_stop(t.instance))
+	_, err := await(C.tanker_stop(t.instance))
 	return err
 }
 
@@ -129,7 +129,7 @@ func (t *Tanker) GetStatus() Status {
 }
 
 func (t *Tanker) GetDeviceID() (*string, error) {
-	result, err := Await(C.tanker_device_id(t.instance))
+	result, err := await(C.tanker_device_id(t.instance))
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, err
 		defer freeCArray(coptions.recipient_public_identities, len(options.Recipients))
 		defer freeCArray(coptions.recipient_gids, len(options.Groups))
 	}
-	_, err := Await(
+	_, err := await(
 		C.tanker_encrypt(
 			t.instance,
 			(*C.uint8_t)(unsafe.Pointer(&encryptedData[0])),
@@ -176,14 +176,14 @@ func (t *Tanker) Decrypt(encryptedData []byte) ([]byte, error) {
 		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
 	}
 	cencrypted := (*C.uint8_t)(unsafe.Pointer(&encryptedData[0]))
-	cdecryptedSize, err := Await(C.tanker_decrypted_size(cencrypted, C.uint64_t(len(encryptedData))))
+	cdecryptedSize, err := await(C.tanker_decrypted_size(cencrypted, C.uint64_t(len(encryptedData))))
 	if err != nil {
 		return nil, err
 	}
 	decryptedSize := uint64((uintptr)(cdecryptedSize))
 
 	clearData := make([]byte, decryptedSize)
-	_, err = Await(
+	_, err = await(
 		C.tanker_decrypt(
 			t.instance,
 			(*C.uint8_t)(unsafe.Pointer(&clearData[0])),
@@ -201,7 +201,7 @@ func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
 	if encryptedData == nil || len(encryptedData) == 0 {
 		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
 	}
-	result, err := Await(C.tanker_get_resource_id((*C.uchar)(unsafe.Pointer(&encryptedData[0])), C.uint64_t(len(encryptedData))))
+	result, err := await(C.tanker_get_resource_id((*C.uchar)(unsafe.Pointer(&encryptedData[0])), C.uint64_t(len(encryptedData))))
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []strin
 	crecipients := toCArray(recipients)
 	cgroups := toCArray(groups)
 
-	_, err := Await(
+	_, err := await(
 		C.tanker_share(
 			t.instance,
 			crecipients,
@@ -232,7 +232,7 @@ func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []strin
 }
 
 func (t *Tanker) GetDeviceList() (goDevices []DeviceDescription, err error) {
-	cresult, err := Await(C.tanker_get_device_list(t.instance))
+	cresult, err := await(C.tanker_get_device_list(t.instance))
 	if err != nil {
 		return
 	}
@@ -250,6 +250,6 @@ func (t *Tanker) GetDeviceList() (goDevices []DeviceDescription, err error) {
 func (t *Tanker) RevokeDevice(deviceID string) (err error) {
 	cdeviceID := C.CString(deviceID)
 	defer C.free(unsafe.Pointer(cdeviceID))
-	_, err = Await(C.tanker_revoke_device(t.instance, cdeviceID))
+	_, err = await(C.tanker_revoke_device(t.instance, cdeviceID))
 	return
 }
