@@ -138,6 +138,15 @@ func (t *Tanker) GetDeviceID() (*string, error) {
 }
 
 func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, error) {
+	if clearData == nil {
+		return nil, newError(ErrorInvalidArgument, "clearData must not be nil")
+	}
+	var cClearData unsafe.Pointer
+	if len(clearData) == 0 {
+		cClearData = C.CBytes(clearData)
+	} else {
+		cClearData = unsafe.Pointer(&clearData[0])
+	}
 	encryptedSize := C.tanker_encrypted_size(C.uint64_t(len(clearData)))
 
 	encryptedData := make([]byte, encryptedSize)
@@ -151,7 +160,7 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, err
 		C.tanker_encrypt(
 			t.instance,
 			(*C.uint8_t)(unsafe.Pointer(&encryptedData[0])),
-			(*C.uint8_t)(unsafe.Pointer(&clearData[0])),
+			(*C.uint8_t)(cClearData),
 			C.uint64_t(len(clearData)),
 			coptions,
 		),
@@ -163,6 +172,9 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, err
 }
 
 func (t *Tanker) Decrypt(encryptedData []byte) ([]byte, error) {
+	if encryptedData == nil || len(encryptedData) == 0 {
+		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
+	}
 	cencrypted := (*C.uint8_t)(unsafe.Pointer(&encryptedData[0]))
 	cdecryptedSize, err := Await(C.tanker_decrypted_size(cencrypted, C.uint64_t(len(encryptedData))))
 	if err != nil {
@@ -186,6 +198,9 @@ func (t *Tanker) Decrypt(encryptedData []byte) ([]byte, error) {
 }
 
 func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
+	if encryptedData == nil || len(encryptedData) == 0 {
+		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
+	}
 	result, err := Await(C.tanker_get_resource_id((*C.uchar)(unsafe.Pointer(&encryptedData[0])), C.uint64_t(len(encryptedData))))
 	if err != nil {
 		return nil, err
@@ -195,8 +210,8 @@ func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
 }
 
 func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []string) error {
-	if resourceIDs == nil && len(resourceIDs) == 0 {
-		return fmt.Errorf("ResourceIDs must not be empty")
+	if resourceIDs == nil || len(resourceIDs) == 0 {
+		return fmt.Errorf("ResourceIDs must not be nil nor empty")
 	}
 	cresourceIds := toCArray(resourceIDs)
 	crecipients := toCArray(recipients)

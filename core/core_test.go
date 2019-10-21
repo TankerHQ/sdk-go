@@ -131,6 +131,24 @@ var _ = Describe("functional", func() {
 			Expect(decrypted).To(Equal(clearData))
 		})
 
+		It("Encrypts an empty array", func() {
+			encrypted, err := aliceSession.Encrypt([]byte{}, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(encrypted).ToNot(HaveLen(0))
+		})
+
+		It("Fails to encrypt nil", func() {
+			_, err := aliceSession.Encrypt(nil, nil)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("Fails to decrypts a too short buffer", func() {
+			_, err := aliceSession.Decrypt(nil)
+			Expect(err).To(HaveOccurred())
+			_, err = aliceSession.Decrypt([]byte{3, 1})
+			Expect(err).To(HaveOccurred())
+		})
+
 		It("Encrypts then shares with bob", func() {
 			bobSession, _ := bobLaptop.Start()
 			clearData := helpers.RandomBytes(1024 * 1024 * 3)
