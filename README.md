@@ -92,7 +92,7 @@ func GetIdentity() (identity string, err error) {
 
 func main() {
 	fmt.Println("Creating tanker ...")
-	tanker, err := core.CreateTanker(AppID, AppURL, os.TempDir())
+	tanker, err := core.NewTanker(AppID, AppURL, os.TempDir())
 	if err != nil {
 		log.Fatal("Could not create Tanker", err)
 	}

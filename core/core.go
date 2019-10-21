@@ -68,8 +68,8 @@ func NativeVersion() string {
 	return C.GoString(C.tanker_version_string())
 }
 
-// CreateTanker Instance
-func CreateTanker(appID string, Url string, writablePath string) (*Tanker, error) {
+// NewTanker Instance
+func NewTanker(appID string, Url string, writablePath string) (*Tanker, error) {
 	initializeTanker()
 
 	cappID := C.CString(appID)
