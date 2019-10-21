@@ -57,6 +57,8 @@ def get_deps_link_flags(install_path: Path) -> str:
 
 def generate_cgo_file(install_path: Path, go_os: str, go_arch: str) -> None:
     link_flags = get_deps_link_flags(install_path)
+    if go_os in ("linux", "windows"):
+        link_flags += " -static-libstdc++ -static-libgcc"
     template_file = Path.getcwd() / "cgo_template.go.in"
     # having go_os and go_arch in the filename acts as an implicit build rule
     # e.g. only build cgo_linux_amd64.go on Linux amd64
