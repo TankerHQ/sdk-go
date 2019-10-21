@@ -59,11 +59,6 @@ type DeviceDescription struct {
 	IsRevoked bool
 }
 
-func (t *Tanker) GetDeviceList() ([]DeviceDescription, error) {
-	panic("Not Implemented")
-	return nil, nil
-}
-
 func Version() string {
 	currentVersion := "dev"
 	return currentVersion
@@ -219,4 +214,27 @@ func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []strin
 		),
 	)
 	return err
+}
+
+func (t *Tanker) GetDeviceList() (goDevices []DeviceDescription, err error) {
+	cresult, err := Await(C.tanker_get_device_list(t.instance))
+	if err != nil {
+		return
+	}
+	cdeviceList := (*C.tanker_device_list_t)(cresult)
+	count := (int)(cdeviceList.count)
+	goDevices = make([]DeviceDescription, 0, count)
+	for i := 0; i < count; i++ {
+		cdevice := (*C.tanker_device_list_elem_t)(unsafe.Pointer(uintptr(unsafe.Pointer(cdeviceList.devices)) + (unsafe.Sizeof(*cdeviceList.devices) * uintptr(i))))
+		goDevices = append(goDevices, DeviceDescription{DeviceID: C.GoString(cdevice.device_id), IsRevoked: bool(cdevice.is_revoked)})
+	}
+	C.tanker_free_device_list(cdeviceList)
+	return
+}
+
+func (t *Tanker) RevokeDevice(deviceID string) (err error) {
+	cdeviceID := C.CString(deviceID)
+	defer C.free(unsafe.Pointer(cdeviceID))
+	_, err = Await(C.tanker_revoke_device(t.instance, cdeviceID))
+	return
 }

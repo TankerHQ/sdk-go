@@ -168,6 +168,29 @@ var _ = Describe("functional", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(attachResult2.Status).To(Equal(core.TankerStatusReady))
 		})
-	})
 
+		It("Retrieves a user's device list", func() {
+			bobSession, _ := bobLaptop.Start()
+			bobLaptopID, _ := bobSession.GetDeviceID()
+
+			device1, _ := bob.CreateDevice()
+			session1, _ := device1.Start()
+			defer session1.Stop()
+			deviceID1, _ := session1.GetDeviceID()
+			Expect(bobSession.RevokeDevice(*deviceID1)).To(Succeed())
+
+			device2, _ := bob.CreateDevice()
+			session2, _ := device2.Start()
+			defer session2.Stop()
+			deviceID2, _ := session2.GetDeviceID()
+
+			devices, err := bobSession.GetDeviceList()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(devices).To(ConsistOf(
+				core.DeviceDescription{*deviceID1, true},
+				core.DeviceDescription{*deviceID2, false},
+				core.DeviceDescription{*bobLaptopID, false},
+			))
+		})
+	})
 })
