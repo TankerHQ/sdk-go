@@ -68,13 +68,24 @@ func NativeVersion() string {
 	return C.GoString(C.tanker_version_string())
 }
 
-// NewTanker Instance
-func NewTanker(appID string, Url string, writablePath string) (*Tanker, error) {
+// TankerOptions defines the options needed to NewTanker().
+type TankerOptions struct {
+	AppID        string
+	WritablePath string
+	Url          *string
+}
+
+// NewTanker creates a new a tanker session.
+// It takes the appID of your application, the url of the Tanker service, and
+func NewTanker(options TankerOptions) (*Tanker, error) {
 	initializeTanker()
 
-	cappID := C.CString(appID)
-	url := C.CString(Url)
-	cwritablePath := C.CString(writablePath)
+	cappID := C.CString(options.AppID)
+	url := (*C.char)(unsafe.Pointer(uintptr(0)))
+	if options.Url != nil {
+		url = C.CString(*options.Url)
+	}
+	cwritablePath := C.CString(options.WritablePath)
 	sdkgo := C.CString("sdk-go")
 	version := C.CString(Version())
 	defer func() {

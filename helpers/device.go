@@ -16,7 +16,7 @@ func (device Device) Destroy() error {
 }
 
 func (device Device) CreateSession() (*core.Tanker, error) {
-	return core.NewTanker(device.AppID, device.Url, device.Path)
+	return core.NewTanker(core.TankerOptions{device.AppID, device.Path, &device.Url})
 }
 
 func (device Device) Start() (*core.Tanker, error) {
