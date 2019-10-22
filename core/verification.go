@@ -10,10 +10,10 @@ import "unsafe"
 type VerificationMethodType uint32
 
 const (
-	VerificationMethodTypeEmail           VerificationMethodType = C.TANKER_VERIFICATION_METHOD_EMAIL
-	VerificationMethodTypePassphrase      VerificationMethodType = C.TANKER_VERIFICATION_METHOD_PASSPHRASE
-	VerificationMethodTypeVerificationKey VerificationMethodType = C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY
-	VerificationMethodTypeOidcIdToken     VerificationMethodType = C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN
+	VerificationMethodEmail           VerificationMethodType = C.TANKER_VERIFICATION_METHOD_EMAIL
+	VerificationMethodPassphrase      VerificationMethodType = C.TANKER_VERIFICATION_METHOD_PASSPHRASE
+	VerificationMethodVerificationKey VerificationMethodType = C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY
+	VerificationMethodOidcIdToken     VerificationMethodType = C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN
 )
 
 type VerificationMethod struct {

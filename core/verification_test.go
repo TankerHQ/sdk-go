@@ -79,7 +79,7 @@ var _ = Describe("functional", func() {
 		session, _ := aliceLaptop.Start()
 		methods, err := session.GetVerificationMethods()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(methods).To(HaveVerificationMethods(core.VerificationMethod{Type: core.VerificationMethodTypePassphrase}))
+		Expect(methods).To(HaveVerificationMethods(core.VerificationMethod{Type: core.VerificationMethodPassphrase}))
 	})
 
 	It("Set verification method", func() {
@@ -96,8 +96,8 @@ var _ = Describe("functional", func() {
 		methods, err := session.GetVerificationMethods()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(methods).To(HaveVerificationMethods(
-			core.VerificationMethod{Type: core.VerificationMethodTypePassphrase},
-			core.VerificationMethod{Type: core.VerificationMethodTypeEmail, Email: &aliceEmail},
+			core.VerificationMethod{Type: core.VerificationMethodPassphrase},
+			core.VerificationMethod{Type: core.VerificationMethodEmail, Email: &aliceEmail},
 		))
 	})
 
@@ -153,8 +153,8 @@ var _ = Describe("functional", func() {
 			methods, err := martinePhone.GetVerificationMethods()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(methods).To(HaveVerificationMethods(
-				core.VerificationMethod{Type: core.VerificationMethodTypePassphrase},
-				core.VerificationMethod{Type: core.VerificationMethodTypeOidcIdToken},
+				core.VerificationMethod{Type: core.VerificationMethodPassphrase},
+				core.VerificationMethod{Type: core.VerificationMethodOidcIdToken},
 			))
 		})
 
@@ -173,7 +173,7 @@ var _ = Describe("functional", func() {
 			attachResult, err := martineLaptop.AttachProvisionalIdentity(*martineProvisionalIdentity)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(attachResult.Status).To(Equal(core.StatusIdentityVerificationNeeded))
-			Expect(attachResult.Method.Type).To(Equal(core.VerificationMethodTypeEmail))
+			Expect(attachResult.Method.Type).To(Equal(core.VerificationMethodEmail))
 			Expect(attachResult.Method.Email).To(Equal(&martineEmail))
 			Expect(martineLaptop.VerifyProvisionalIdentity(martineOidcVerification)).To(Succeed())
 			decrypted, err := martineLaptop.Decrypt(encrypted)
