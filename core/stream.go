@@ -46,11 +46,12 @@ func gotanker_proxy_input_source_read(
 		slice := &reflect.SliceHeader{Data: uintptr(unsafe.Pointer(buffer)), Len: int(buffer_size), Cap: int(buffer_size)}
 		rbuf := *(*[]byte)(unsafe.Pointer(slice))
 		nb_read, err := wrapper.reader.Read(rbuf)
-		if err != nil {
+		if err == io.EOF || err == nil {
+			C.tanker_stream_read_operation_finish(operation, C.int64_t(nb_read))
+		} else {
 			wrapper.err = err
 			C.tanker_stream_read_operation_finish(operation, -1)
 		}
-		C.tanker_stream_read_operation_finish(operation, C.int64_t(nb_read))
 	}()
 }
 
