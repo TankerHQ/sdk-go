@@ -40,7 +40,7 @@ func tanker_then_handler_proxy(fut *C.tanker_future_t, v unsafe.Pointer) unsafe.
 	return nil
 }
 
-//await kind of awaits for a tanker_future_t to complete, this is dark magic, beware.
+// await kind of awaits for a tanker_future_t to complete, this is dark magic, beware.
 func await(future *C.tanker_future_t) (unsafe.Pointer, error) {
 	tan := make(resultChan)
 

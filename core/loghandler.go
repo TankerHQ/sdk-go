@@ -13,7 +13,17 @@ static void _tanker_set_log_handler()
 */
 import "C"
 
+// LogLevel represents a Tanker log level
+// available values are:
+// * D, for Debug
+// * I, for Info
+// * W, for Warning
+// * E, for Error
 type LogLevel rune
+
+// LogRecord represents a Tanker log message.
+// Authors are free to handle each log passed to their registered LogHandler
+// as they see fit.
 type LogRecord struct {
 	Category string
 	Level    LogLevel
@@ -21,6 +31,8 @@ type LogRecord struct {
 	Line     uint
 	Message  string
 }
+
+// LogHandler defines the Tanker log handler callback.
 type LogHandler func(LogRecord)
 
 var currentLogHandler LogHandler = nil
@@ -52,7 +64,7 @@ func tanker_log_handler_proxy(crecord *C.tanker_log_record_t) {
 	currentLogHandler(record)
 }
 
-//SetLogHandler set the loghandler of all tanker instances
+// SetLogHandler sets a logHandler for all Tanker instances.
 func SetLogHandler(handler LogHandler) {
 	currentLogHandler = handler
 

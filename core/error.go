@@ -1,5 +1,6 @@
 package core
 
+// ErrorCode represents a Tanker error code.
 type ErrorCode uint32
 
 const (
@@ -19,6 +20,8 @@ const (
 	ErrorIoError
 )
 
+// Error is the Tanker error interface. Cast the error returned by
+// Tanker functions to this interface to get more informations.
 type Error interface {
 	error
 	Code() ErrorCode

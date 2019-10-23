@@ -7,6 +7,9 @@ package core
 import "C"
 import "unsafe"
 
+// CreateGroup creates a Tanker group. The group will be created with the user's PublicIdentities provided.
+// This function succeeds or fails completely, e.g. if a PublicIdentity is invalid, no group is created.
+// On success, the created group ID is returned.
 func (t *Tanker) CreateGroup(publicIdentities []string) (*string, error) {
 	nbIDs := len(publicIdentities)
 	ids := toCArray(publicIdentities)
@@ -19,6 +22,8 @@ func (t *Tanker) CreateGroup(publicIdentities []string) (*string, error) {
 	return &groupID, nil
 }
 
+// UpdateGroupMembers updates the members of a group. The new group members will automatically
+// get access to all resources previously shared with the group.
 func (t *Tanker) UpdateGroupMembers(groupID string, publicIdentitiesToAdd []string) error {
 	nbIDs := len(publicIdentitiesToAdd)
 	cgroupID := C.CString(groupID)

@@ -1,3 +1,4 @@
+// Bindings for the Tanker Core SDK
 package core
 
 /*
@@ -10,6 +11,7 @@ import (
 	"unsafe"
 ) //nolint
 
+// Status represents the Tanker current status.
 type Status uint32
 
 const (
@@ -19,12 +21,15 @@ const (
 	StatusIdentityVerificationNeeded
 )
 
+// EncryptOptions contains user and group recipients to share with during an @Encrypt()
 type EncryptOptions struct {
+	// Recipients is a list of the public identities of each recipient to share with
 	Recipients []string
-	Groups     []string
+	// Groups is a list of group ids to share with
+	Groups []string
 }
 
-//unsafeANSIToString transforms a *C.char to a GoString. The *C.char is free'd.
+// unsafeANSIToString transforms a *C.char to a GoString. The *C.char is free'd.
 func unsafeANSIToString(pointer unsafe.Pointer) string {
 	charP := (*C.char)(unsafe.Pointer(pointer))
 	str := C.GoString(charP)
@@ -32,16 +37,22 @@ func unsafeANSIToString(pointer unsafe.Pointer) string {
 	return str
 }
 
-// Tanker object
+// Tanker represents a Tanker instance.
 type Tanker struct {
 	instance *C.tanker_t
 }
 
+// initializeTanker initializes the native library.
+// Must be called a least once before any Tanker operations.
+// This functions is called each time a Tanker instance is created.
 func initializeTanker() {
 	C.tanker_init()
 }
 
+// EventHandler defines the function object type used by RegisterEventHandler().
 type EventHandler func()
+
+// EventType represents the type of event one can register and be notified of.
 type EventType uint32
 
 const (
@@ -49,34 +60,42 @@ const (
 	EventDeviceRevoked EventType = C.TANKER_EVENT_DEVICE_REVOKED
 )
 
-func (t *Tanker) ConnectEvent(event EventType, handler EventHandler) error {
+// RegisterEventHandler registers an event handler for the given EventType.
+func (t *Tanker) RegisterEventHandler(event EventType, handler EventHandler) error {
 	panic("Not Implemented")
 	return nil
 }
 
+// DeviceDescription contains the id of a device and whether this device has been revoked.
 type DeviceDescription struct {
 	DeviceID  string
 	IsRevoked bool
 }
 
+// Version returns the current version of this SDK.
 func Version() string {
 	currentVersion := "dev"
 	return currentVersion
 }
 
-func NativeVersion() string {
+// nativeVersion returns the native version currently used by this SDK.
+func nativeVersion() string {
 	return C.GoString(C.tanker_version_string())
 }
 
-// TankerOptions defines the options needed to NewTanker().
+// TankerOptions defines the options needed to create a new Tanker
+// instance with NewTanker().
 type TankerOptions struct {
-	AppID        string
+	// The Application ID you want to use.
+	AppID string
+	// An existing filesystem path to store persistent user data.
 	WritablePath string
-	Url          *string
+	// The url of the Tanker service. Should be left to nil.
+	Url *string
 }
 
-// NewTanker creates a new a tanker session.
-// It takes the appID of your application, the url of the Tanker service, and
+// NewTanker creates a new a Tanker instance.
+//  session, err := core.NewTanker(core.TankerOptions{"<your app ID>", "/home/user/.config/fancyname/", nil})
 func NewTanker(options TankerOptions) (*Tanker, error) {
 	initializeTanker()
 
@@ -113,12 +132,23 @@ func NewTanker(options TankerOptions) (*Tanker, error) {
 	return &this, nil
 }
 
-//Destroy destroys this tanker object
+// Destroy destroys this Tanker instance. This functions performs
+// internal resources cleanups and calls Stop() if necessary.
+// No further operations is possible on this instance after calling Destroy(),
+// you'll need to create a new one.
 func (t *Tanker) Destroy() error {
 	_, err := await(C.tanker_destroy(t.instance))
 	return err
 }
 
+// Start starts a new Tanker session and returns a status.
+//
+//  User := app.AuthenticatedUser(id, password)
+//  status, err := tanker.Start(user.TankerIdentity)
+//  if err == nil && status == core.StatusReady {
+//	 	// Let's encrypt, share and decrypts data!
+//  }
+// The Tanker status must be StatusStopped before calling Start().
 func (t *Tanker) Start(identity string) (Status, error) {
 	cidentity := C.CString(identity)
 	result, err := await(C.tanker_start(t.instance, cidentity))
@@ -130,15 +160,20 @@ func (t *Tanker) Start(identity string) (Status, error) {
 	return status, nil
 }
 
+// Stop stops the current Tanker Session. This session can either
+// be destroyed with Destroy() or be restarted with Start().
 func (t *Tanker) Stop() error {
 	_, err := await(C.tanker_stop(t.instance))
 	return err
 }
 
+// GetStatus retrieves the current Tanker session status.
 func (t *Tanker) GetStatus() Status {
 	return Status(C.tanker_status(t.instance))
 }
 
+// GetDeviceID retrieves the current Tanker device's ID. Each device
+// has its own ID and can be identified as such.
 func (t *Tanker) GetDeviceID() (*string, error) {
 	result, err := await(C.tanker_device_id(t.instance))
 	if err != nil {
@@ -148,6 +183,8 @@ func (t *Tanker) GetDeviceID() (*string, error) {
 	return &ID, nil
 }
 
+// Encrypt encrypts the passed []byte and returns the result. To share the resulting
+// encrypted resource with either or both individuals and groups, fill the EncryptOptions parameter.
 func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, error) {
 	if clearData == nil {
 		return nil, newError(ErrorInvalidArgument, "clearData must not be nil")
@@ -182,6 +219,7 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, err
 	return encryptedData, nil
 }
 
+// Decrypt decrypts the pass encrypted resource and return the original clear data.
 func (t *Tanker) Decrypt(encryptedData []byte) ([]byte, error) {
 	if encryptedData == nil || len(encryptedData) == 0 {
 		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
@@ -208,6 +246,8 @@ func (t *Tanker) Decrypt(encryptedData []byte) ([]byte, error) {
 	return clearData, nil
 }
 
+// GetResourceId retrieves an encrypted resource's ID.
+// The resource ID can be pass to a call to Share().
 func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
 	if encryptedData == nil || len(encryptedData) == 0 {
 		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
@@ -220,6 +260,9 @@ func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
 	return &resourceID, nil
 }
 
+// Share shares a list of resource to a list of recipients and/or groups
+// This function either fully succeeds or fails. In case of failure,
+// nothing is share with any recipient or group.
 func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []string) error {
 	if resourceIDs == nil || len(resourceIDs) == 0 {
 		return fmt.Errorf("ResourceIDs must not be nil nor empty")
@@ -242,6 +285,8 @@ func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []strin
 	return err
 }
 
+// GetDeviceList retrieves the user's device list.
+// The current Tanker status must be StatusReady.
 func (t *Tanker) GetDeviceList() (goDevices []DeviceDescription, err error) {
 	cresult, err := await(C.tanker_get_device_list(t.instance))
 	if err != nil {
@@ -258,6 +303,7 @@ func (t *Tanker) GetDeviceList() (goDevices []DeviceDescription, err error) {
 	return
 }
 
+// RevokeDevice revokes one of the user's devices.
 func (t *Tanker) RevokeDevice(deviceID string) (err error) {
 	cdeviceID := C.CString(deviceID)
 	defer C.free(unsafe.Pointer(cdeviceID))
