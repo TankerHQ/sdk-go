@@ -77,6 +77,7 @@ def install_deps(profile: str, use_tanker: str) -> None:
     profile_prefix = profile.split("-")[0]
     go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
     deps_install_path = Path.getcwd() / "core/ctanker" / f"{go_os}-{go_arch}"
+    deps_install_path.rmtree_p()
 
     install_tanker_native(profile, deps_install_path, use_tanker)
     generate_cgo_file(deps_install_path, go_os, go_arch)
