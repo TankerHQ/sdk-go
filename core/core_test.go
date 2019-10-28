@@ -62,7 +62,7 @@ var _ = Describe("functional", func() {
 		})
 
 		// Note: crashes on Windows
-		XIt("Fails when it open the same device twice", func() {
+		It("Fails when it open the same device twice", func() {
 			session, err := aliceLaptop.Start()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(session.GetStatus()).To(Equal(core.StatusReady))
