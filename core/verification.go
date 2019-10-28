@@ -10,9 +10,10 @@ import "unsafe"
 type VerificationMethodType uint32
 
 const (
-	VerificationMethodTypeEmail           VerificationMethodType = C.TANKER_VERIFICATION_METHOD_EMAIL
-	VerificationMethodTypePassphrase      VerificationMethodType = C.TANKER_VERIFICATION_METHOD_PASSPHRASE
-	VerificationMethodTypeVerificationKey VerificationMethodType = C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY
+	VerificationMethodEmail           VerificationMethodType = C.TANKER_VERIFICATION_METHOD_EMAIL
+	VerificationMethodPassphrase      VerificationMethodType = C.TANKER_VERIFICATION_METHOD_PASSPHRASE
+	VerificationMethodVerificationKey VerificationMethodType = C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY
+	VerificationMethodOidcIdToken     VerificationMethodType = C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN
 )
 
 type VerificationMethod struct {
@@ -22,7 +23,7 @@ type VerificationMethod struct {
 
 type AttachResult struct {
 	Status Status
-	Method VerificationMethod
+	Method *VerificationMethod
 }
 
 type EmailVerification struct {
@@ -38,9 +39,13 @@ type KeyVerification struct {
 	Key string
 }
 
+type OidcVerification struct {
+	OidcIdToken string
+}
+
 func convertVerificationToTanker(verif interface{}) *C.tanker_verification_t {
 	result := &C.tanker_verification_t{
-		version: 2,
+		version: 3,
 	}
 
 	switch t := verif.(type) {
@@ -57,6 +62,9 @@ func convertVerificationToTanker(verif interface{}) *C.tanker_verification_t {
 	case KeyVerification:
 		result.verification_method_type = C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY
 		result.verification_key = C.CString(t.Key)
+	case OidcVerification:
+		result.verification_method_type = C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN
+		result.oidc_id_token = C.CString(t.OidcIdToken)
 	}
 	return result
 }
@@ -70,32 +78,50 @@ func freeVerif(verif *C.tanker_verification_t) {
 		C.free(unsafe.Pointer(verif.passphrase))
 	case C.TANKER_VERIFICATION_METHOD_VERIFICATION_KEY:
 		C.free(unsafe.Pointer(verif.verification_key))
+	case C.TANKER_VERIFICATION_METHOD_OIDC_ID_TOKEN:
+		C.free(unsafe.Pointer(verif.oidc_id_token))
 	}
 }
 
 func (t *Tanker) RegisterIdentity(verification interface{}) error {
 	cverif := convertVerificationToTanker(verification)
 	defer freeVerif(cverif)
-	_, err := Await(C.tanker_register_identity(t.instance, cverif))
+
+	_, err := await(C.tanker_register_identity(t.instance, cverif))
 	return err
 }
 
 func (t *Tanker) VerifyIdentity(verification interface{}) error {
 	cverif := convertVerificationToTanker(verification)
 	defer freeVerif(cverif)
-	_, err := Await(C.tanker_verify_identity(t.instance, cverif))
+	_, err := await(C.tanker_verify_identity(t.instance, cverif))
 	return err
 }
 
 func (t *Tanker) SetVerificationMethod(verification interface{}) error {
 	cverif := convertVerificationToTanker(verification)
 	defer freeVerif(cverif)
-	_, err := Await(C.tanker_set_verification_method(t.instance, cverif))
+	_, err := await(C.tanker_set_verification_method(t.instance, cverif))
 	return err
 }
 
+func convertVerificationMethodToTanker(cmethod *C.tanker_verification_method_t) *VerificationMethod {
+	if cmethod == nil {
+		return nil
+	}
+	var email *string
+	if cmethod.verification_method_type == C.TANKER_VERIFICATION_METHOD_EMAIL {
+		dummy := C.GoString(cmethod.email)
+		email = &dummy
+	}
+	return &VerificationMethod{
+		Type:  VerificationMethodType(cmethod.verification_method_type),
+		Email: email,
+	}
+}
+
 func (t *Tanker) GetVerificationMethods() ([]VerificationMethod, error) {
-	result, err := Await(C.tanker_get_verification_methods(t.instance))
+	result, err := await(C.tanker_get_verification_methods(t.instance))
 	if err != nil {
 		return nil, err
 	}
@@ -103,16 +129,8 @@ func (t *Tanker) GetVerificationMethods() ([]VerificationMethod, error) {
 	count := (int)(methodList.count)
 	goMethods := make([]VerificationMethod, 0, count)
 	for i := 0; i < count; i++ {
-		method := (*C.tanker_verification_method_t)(unsafe.Pointer(uintptr(unsafe.Pointer(methodList.methods)) + (unsafe.Sizeof(*methodList.methods) * uintptr(i))))
-		var email *string
-		if method.verification_method_type == C.TANKER_VERIFICATION_METHOD_EMAIL {
-			dummy := C.GoString(method.email)
-			email = &dummy
-		}
-		goMethods = append(goMethods, VerificationMethod{
-			Type:  VerificationMethodType(method.verification_method_type),
-			Email: email,
-		})
+		cmethod := (*C.tanker_verification_method_t)(unsafe.Pointer(uintptr(unsafe.Pointer(methodList.methods)) + (unsafe.Sizeof(*methodList.methods) * uintptr(i))))
+		goMethods = append(goMethods, *convertVerificationMethodToTanker(cmethod))
 	}
 	C.tanker_free_verification_method_list(methodList)
 	return goMethods, nil
@@ -121,25 +139,27 @@ func (t *Tanker) GetVerificationMethods() ([]VerificationMethod, error) {
 func (t *Tanker) AttachProvisionalIdentity(provisionalIdentity string) (*AttachResult, error) {
 	cidentity := C.CString(provisionalIdentity)
 	defer C.free(unsafe.Pointer(cidentity))
-	result, err := Await(C.tanker_attach_provisional_identity(t.instance, cidentity))
+	result, err := await(C.tanker_attach_provisional_identity(t.instance, cidentity))
 	if err != nil {
 		return nil, err
 	}
 	cresult := (*C.tanker_attach_result_t)(result)
+	defer C.tanker_free_attach_result(cresult)
 	attachResult := &AttachResult{
 		Status: Status(cresult.status),
+		Method: convertVerificationMethodToTanker(cresult.method),
 	}
 
 	return attachResult, err
 }
 
 func (t *Tanker) VerifyProvisionalIdentity(verification interface{}) error {
-	_, err := Await(C.tanker_verify_provisional_identity(t.instance, convertVerificationToTanker(verification)))
+	_, err := await(C.tanker_verify_provisional_identity(t.instance, convertVerificationToTanker(verification)))
 	return err
 }
 
 func (t *Tanker) GenerateVerificationKey() (*string, error) {
-	result, err := Await(C.tanker_generate_verification_key(t.instance))
+	result, err := await(C.tanker_generate_verification_key(t.instance))
 	if err != nil {
 		return nil, err
 	}

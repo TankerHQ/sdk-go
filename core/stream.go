@@ -46,17 +46,18 @@ func gotanker_proxy_input_source_read(
 		slice := &reflect.SliceHeader{Data: uintptr(unsafe.Pointer(buffer)), Len: int(buffer_size), Cap: int(buffer_size)}
 		rbuf := *(*[]byte)(unsafe.Pointer(slice))
 		nb_read, err := wrapper.reader.Read(rbuf)
-		if err != nil {
+		if err == io.EOF || err == nil {
+			C.tanker_stream_read_operation_finish(operation, C.int64_t(nb_read))
+		} else {
 			wrapper.err = err
 			C.tanker_stream_read_operation_finish(operation, -1)
 		}
-		C.tanker_stream_read_operation_finish(operation, C.int64_t(nb_read))
 	}()
 }
 
 func (s *OutputStream) Read(buffer []byte) (int, error) {
 	askedLen := C.int64_t(len(buffer))
-	result, err := Await(C.tanker_stream_read(s.stream, (*C.uchar)(unsafe.Pointer(&buffer[0])), askedLen))
+	result, err := await(C.tanker_stream_read(s.stream, (*C.uchar)(unsafe.Pointer(&buffer[0])), askedLen))
 	nb_read := int((uintptr)(result))
 	if err != nil {
 		if s.wrapper.err != nil {
@@ -71,12 +72,12 @@ func (s *OutputStream) Read(buffer []byte) (int, error) {
 }
 
 func (s *OutputStream) Destroy() {
-	_, _ = Await(C.tanker_stream_close(s.stream))
+	_, _ = await(C.tanker_stream_close(s.stream))
 	gopointer.Unref(unsafe.Pointer(s.todelete))
 }
 
 func (s *OutputStream) GetResourceID() (*string, error) {
-	result, err := Await(C.tanker_stream_get_resource_id(s.stream))
+	result, err := await(C.tanker_stream_get_resource_id(s.stream))
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +97,7 @@ func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptOptions) (*Outp
 		err:    nil,
 	}
 	wrapped := gopointer.Save(&wrapper)
-	result, err := Await(C.gotanker_stream_encrypt(t.instance, wrapped, coptions))
+	result, err := await(C.gotanker_stream_encrypt(t.instance, wrapped, coptions))
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptOptions) (*Outp
 
 func (t *Tanker) StreamDecrypt(reader io.Reader) (*OutputStream, error) {
 	wrapper := streamWrapper{reader: reader, err: nil}
-	result, err := Await(C.gotanker_stream_decrypt(t.instance, gopointer.Save(&wrapper)))
+	result, err := await(C.gotanker_stream_decrypt(t.instance, gopointer.Save(&wrapper)))
 	if err != nil {
 		return nil, err
 	}

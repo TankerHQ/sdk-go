@@ -11,7 +11,7 @@ func (t *Tanker) CreateGroup(publicIdentities []string) (*string, error) {
 	nbIDs := len(publicIdentities)
 	ids := toCArray(publicIdentities)
 	defer freeCArray(ids, nbIDs)
-	result, err := Await(C.tanker_create_group(t.instance, ids, C.uint64_t(nbIDs)))
+	result, err := await(C.tanker_create_group(t.instance, ids, C.uint64_t(nbIDs)))
 	if err != nil {
 		return nil, err
 	}
@@ -25,6 +25,6 @@ func (t *Tanker) UpdateGroupMembers(groupID string, publicIdentitiesToAdd []stri
 	ids := toCArray(publicIdentitiesToAdd)
 	defer freeCArray(ids, nbIDs)
 	defer C.free(unsafe.Pointer(cgroupID))
-	_, err := Await(C.tanker_update_group_members(t.instance, cgroupID, ids, C.uint64_t(nbIDs)))
+	_, err := await(C.tanker_update_group_members(t.instance, cgroupID, ids, C.uint64_t(nbIDs)))
 	return err
 }
