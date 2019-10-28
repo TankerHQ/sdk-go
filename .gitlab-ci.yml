@@ -2,7 +2,6 @@ before_script:
   - dmenv install
 
 stages:
-  - build
   - check
   - deploy
 
@@ -33,25 +32,19 @@ check/macos:
       - core/ctanker/darwin-amd64/include
       - core/ctanker/darwin-amd64/lib
 
-cross-build/windows:
-  stage: build
-  tags: [linux]
-  script:
-    - dmenv run -- python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile mingw32-release
-  artifacts:
-    paths:
-      - core/cgo_windows_386.go
-      - core/ctanker/windows-386/include
-      - core/ctanker/windows-386/lib
-    expire_in: 1 hour
-
 check/windows:
   extends: .check
   tags: [windows]
   script:
     - set GOARCH=386
     - set CGO_ENABLED=1
+    - dmenv run -- python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile mingw32-release
     - dmenv run -- python run-ci.py --isolate-conan-user-home build-and-test
+  artifacts:
+    paths:
+      - core/cgo_windows_386.go
+      - core/ctanker/windows-386/include
+      - core/ctanker/windows-386/lib
 
 .check-deployed:
   stage: check
