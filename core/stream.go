@@ -28,6 +28,9 @@ type streamWrapper struct {
 	reader io.Reader
 	err    error
 }
+
+// OutputStream is returned StreamEncrypt() And StreamDecrypt().
+// It statisfies io.Reader, so you should call Read() to get the encrypted or clear data.
 type OutputStream struct {
 	stream   *C.tanker_stream_t
 	wrapper  *streamWrapper
@@ -55,6 +58,8 @@ func gotanker_proxy_input_source_read(
 	}()
 }
 
+// Read reads from the OutputStream, fills the provided buffer
+// and returns the number of read bytes.
 func (s *OutputStream) Read(buffer []byte) (int, error) {
 	askedLen := C.int64_t(len(buffer))
 	result, err := await(C.tanker_stream_read(s.stream, (*C.uchar)(unsafe.Pointer(&buffer[0])), askedLen))
@@ -71,11 +76,15 @@ func (s *OutputStream) Read(buffer []byte) (int, error) {
 	return nb_read, nil
 }
 
+// Destroy destroys the OutputStream, internal resource cleanup is performend
+// this object is no longer usable.
 func (s *OutputStream) Destroy() {
 	_, _ = await(C.tanker_stream_close(s.stream))
 	gopointer.Unref(unsafe.Pointer(s.todelete))
 }
 
+// GetResourceID returns the resource ID of the stream.
+// The resource ID can be passed to a call to Share()
 func (s *OutputStream) GetResourceID() (*string, error) {
 	result, err := await(C.tanker_stream_get_resource_id(s.stream))
 	if err != nil {
@@ -85,6 +94,8 @@ func (s *OutputStream) GetResourceID() (*string, error) {
 	return &streamID, nil
 }
 
+// StreamEncrypt creates an OutputStream for encryption. The stream data will be shared according
+// to the EncryptOptions passed. The Reader passed should contains the clear data.
 func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptOptions) (*OutputStream, error) {
 	var coptions *C.tanker_encrypt_options_t = nil
 	if options != nil {
@@ -108,6 +119,8 @@ func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptOptions) (*Outp
 	}, nil
 }
 
+// StreamDecrypt creates an OutputStream for encryption. The Reader passed should contain the encrypted
+// data.
 func (t *Tanker) StreamDecrypt(reader io.Reader) (*OutputStream, error) {
 	wrapper := streamWrapper{reader: reader, err: nil}
 	result, err := await(C.gotanker_stream_decrypt(t.instance, gopointer.Save(&wrapper)))

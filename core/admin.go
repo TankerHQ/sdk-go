@@ -10,12 +10,12 @@ import (
 	"unsafe"
 )
 
-//Admin .
+// Admin allows you to create, destroy Application.
 type Admin struct {
 	admin *C.tanker_admin_t
 }
 
-//AppDescriptor .
+// AppDescriptor contains properties of a Tanker application.
 type AppDescriptor struct {
 	Name       string
 	ID         string
@@ -23,7 +23,7 @@ type AppDescriptor struct {
 	PublicKey  string
 }
 
-// NewAdmin creates an admin object
+// NewAdmin creates a new admin session.
 func NewAdmin(URL string, IDToken string) (*Admin, error) {
 	url := C.CString(URL)
 	token := C.CString(IDToken)
@@ -40,7 +40,7 @@ func NewAdmin(URL string, IDToken string) (*Admin, error) {
 	return that, nil
 }
 
-//NewApp creates an aplication on the tanker server
+// NewApp creates a Tanker application on the Tanker server.
 func (adm Admin) NewApp(Name string) (*AppDescriptor, error) {
 	name := C.CString(Name)
 	defer C.free(unsafe.Pointer(name))
@@ -59,7 +59,7 @@ func (adm Admin) NewApp(Name string) (*AppDescriptor, error) {
 	return that, nil
 }
 
-//DeleteApp destroys the application on the Tanker servers.
+// DeleteApp destroys the application on the Tanker server.
 func (adm Admin) DeleteApp(AppID string) error {
 	appID := C.CString(AppID)
 	defer C.free(unsafe.Pointer(appID))
@@ -70,7 +70,9 @@ func (adm Admin) DeleteApp(AppID string) error {
 	return nil
 }
 
-//GetVerificationCode retrieve the verificaton on a test trustchain
+// GetVerificationCode retrieves the verificaton code on a test app. The email provided must the
+// same as the one in the ProvisionalIdentity you want the verification code for. The Tanker application
+// must be a test application.
 func (adm *Admin) GetVerificationCode(AppID string, Email string) (*string, error) {
 	appID := C.CString(AppID)
 	email := C.CString(Email)
@@ -85,6 +87,7 @@ func (adm *Admin) GetVerificationCode(AppID string, Email string) (*string, erro
 	return &code, nil
 }
 
+// Update updates a Tanker application's settings.
 func (adm Admin) Update(AppID string, OidcClientId string, OidcProvider string) error {
 	appID := C.CString(AppID)
 	oidcClientId := C.CString(OidcClientId)
@@ -98,7 +101,7 @@ func (adm Admin) Update(AppID string, OidcClientId string, OidcProvider string) 
 	return err
 }
 
-// Destroy an Admin
+// Destroy destroys this Admin session.
 func (adm Admin) Destroy() {
 	_, _ = await(C.tanker_admin_destroy(adm.admin))
 }
