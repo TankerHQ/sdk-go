@@ -127,6 +127,8 @@ def main() -> None:
 
     build_and_test_parser = subparsers.add_parser("build-and-test")
 
+    subparsers.add_parser("mirror")
+
     deploy_parser = subparsers.add_parser("deploy")
     deploy_parser.add_argument("--version", required=True)
 
@@ -141,6 +143,8 @@ def main() -> None:
         build_and_check()
     elif args.command == "deploy":
         deploy(version=args.version)
+    elif args.command == "mirror":
+        ci.git.mirror(github_url="git@github.com:TankerHQ/sdk-go")
     else:
         parser.print_help()
         sys.exit(1)
