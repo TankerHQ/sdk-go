@@ -37,10 +37,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"log"
 
 	"github.com/TankerHQ/sdk-go/v2/core"
 )
@@ -92,7 +92,8 @@ func GetIdentity() (identity string, err error) {
 
 func main() {
 	fmt.Println("Creating tanker ...")
-	tanker, err := core.NewTanker(AppID, AppURL, os.TempDir())
+	tankerOpts := core.TankerOptions{AppID: AppID, WritablePath: os.TempDir()}
+	tanker, err := core.NewTanker(tankerOpts)
 	if err != nil {
 		log.Fatal("Could not create Tanker", err)
 	}
@@ -132,7 +133,6 @@ func main() {
 		log.Fatal("Failed to decrypt  message", err)
 	}
 
-    clearText := string(clearBytes)
 	if clearText != message {
 		log.Fatal("Unexpected decrypted message: got '%s', want '%s'", clearText, message)
 	}
