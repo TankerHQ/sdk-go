@@ -73,6 +73,18 @@ check/deployed-windows:
     - dmenv run -- python run-ci.py --isolate-conan-user-home install-deps --use-tanker=deployed --profile mingw32-release
     - dmenv run -- python run-ci.py build-and-test
 
+mirror:
+  tags:
+    - linux
+  stage: deploy
+  only:
+    - /\Av[0-9.]+\z/   # public release tags
+    - master
+    - /\Afeat\/.+\z/   # feat/ branches
+  except:
+    - schedules
+  script:
+    - dmenv run -- python run-ci.py  mirror
 
 deploy:
  stage: deploy
