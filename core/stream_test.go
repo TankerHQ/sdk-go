@@ -21,6 +21,7 @@ var _ = Describe("Streams", func() {
 		alice := TestApp.CreateUser()
 		aliceLaptop, _ := alice.CreateDevice()
 		aliceSession, _ := aliceLaptop.Start()
+		defer aliceSession.Stop() // nolint: errCheck
 		encryptedStream, err := aliceSession.StreamEncrypt(source, nil)
 		Expect(err).ToNot(HaveOccurred())
 		decryptedStream, err := aliceSession.StreamDecrypt(encryptedStream)
@@ -42,6 +43,7 @@ var _ = Describe("Streams", func() {
 		alice := TestApp.CreateUser()
 		aliceLaptop, _ := alice.CreateDevice()
 		aliceSession, _ := aliceLaptop.Start()
+		defer aliceSession.Stop() // nolint: errCheck
 		encryptedStream, err := aliceSession.StreamEncrypt(source, nil)
 		Expect(err).ToNot(HaveOccurred())
 		id, err := encryptedStream.GetResourceID()
