@@ -18,6 +18,7 @@ const (
 	ErrorTooManyAttempts
 	ErrorExpiredVerification
 	ErrorIoError
+	ErrorDeviceRevoked
 )
 
 // Error is the Tanker error interface. Cast the error returned by
