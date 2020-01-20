@@ -63,7 +63,6 @@ const (
 // RegisterEventHandler registers an event handler for the given EventType.
 func (t *Tanker) RegisterEventHandler(event EventType, handler EventHandler) error {
 	panic("Not Implemented")
-	return nil
 }
 
 // DeviceDescription contains the id of a device and whether this device has been revoked.
@@ -78,8 +77,8 @@ func Version() string {
 	return currentVersion
 }
 
-// nativeVersion returns the native version currently used by this SDK.
-func nativeVersion() string {
+// NativeVersion returns the native version currently used by this SDK.
+func NativeVersion() string {
 	return C.GoString(C.tanker_version_string())
 }
 
@@ -221,7 +220,7 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, err
 
 // Decrypt decrypts the pass encrypted resource and return the original clear data.
 func (t *Tanker) Decrypt(encryptedData []byte) ([]byte, error) {
-	if encryptedData == nil || len(encryptedData) == 0 {
+	if len(encryptedData) == 0 {
 		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
 	}
 	cencrypted := (*C.uint8_t)(unsafe.Pointer(&encryptedData[0]))
@@ -249,7 +248,7 @@ func (t *Tanker) Decrypt(encryptedData []byte) ([]byte, error) {
 // GetResourceId retrieves an encrypted resource's ID.
 // The resource ID can be pass to a call to Share().
 func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
-	if encryptedData == nil || len(encryptedData) == 0 {
+	if len(encryptedData) == 0 {
 		return nil, newError(ErrorInvalidArgument, "encryptedData must not be nil")
 	}
 	result, err := await(C.tanker_get_resource_id((*C.uchar)(unsafe.Pointer(&encryptedData[0])), C.uint64_t(len(encryptedData))))
@@ -264,7 +263,7 @@ func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
 // This function either fully succeeds or fails. In case of failure,
 // nothing is share with any recipient or group.
 func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []string) error {
-	if resourceIDs == nil || len(resourceIDs) == 0 {
+	if len(resourceIDs) == 0 {
 		return fmt.Errorf("ResourceIDs must not be nil nor empty")
 	}
 	cresourceIds := toCArray(resourceIDs)

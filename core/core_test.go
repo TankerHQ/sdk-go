@@ -44,7 +44,7 @@ var _ = Describe("functional", func() {
 		})
 
 		It("Starts and stops a session twice", func() {
-			aliceSession, err := aliceLaptop.Start()
+			aliceSession, _ := aliceLaptop.Start()
 			defer aliceSession.Stop() // nolint: errcheck
 			Expect(aliceSession.Stop()).To(Succeed())
 			Expect(aliceSession.GetStatus()).To(Equal(core.StatusStopped))
@@ -55,7 +55,7 @@ var _ = Describe("functional", func() {
 		})
 
 		It("Aborts Registration", func() {
-			aliceSession, err := aliceLaptop.CreateSession()
+			aliceSession, _ := aliceLaptop.CreateSession()
 			status, err := aliceSession.Start(alice.Identity)
 			defer aliceSession.Stop() // nolint: errcheck
 			Expect(err).ToNot(HaveOccurred())

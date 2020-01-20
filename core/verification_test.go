@@ -32,7 +32,7 @@ func getOidcIdToken(oidcConfig helpers.OidcConfig, userName string) (*string, er
 		return nil, err
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, _ := ioutil.ReadAll(response.Body)
 
 	var result map[string]json.RawMessage
 	if err = json.Unmarshal(body, &result); err != nil {
