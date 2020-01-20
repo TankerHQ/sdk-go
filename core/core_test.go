@@ -217,5 +217,25 @@ var _ = Describe("functional", func() {
 				core.DeviceDescription{*bobLaptopID, false},
 			))
 		})
+
+		It("Receives a signal and an error when revoked", func() {
+			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errCheck
+
+			device1, _ := bob.CreateDevice()
+			session1, _ := device1.Start()
+			defer session1.Stop() // nolint: errCheck
+			deviceID1, _ := session1.GetDeviceID()
+			Expect(bobSession.RevokeDevice(*deviceID1)).To(Succeed())
+
+			clearData := helpers.RandomBytes(12)
+			encrypted, err := bobSession.Encrypt(clearData, nil)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = session1.Decrypt(encrypted)
+			Expect(err).To(HaveOccurred())
+			terror, ok := (err).(core.Error)
+			Expect(ok).To(BeTrue())
+			Expect(terror.Code()).To(Equal(core.ErrorDeviceRevoked))
+		})
 	})
 })
