@@ -7,14 +7,14 @@ package core
 import "C"
 import "unsafe"
 
-func toCArray(gos []string) **C.char {
-	l := len(gos)
-	if gos == nil || len(gos) == 0 {
+func toCArray(goStrings []string) **C.char {
+	l := len(goStrings)
+	if len(goStrings) == 0 {
 		return nil
 	}
 	res := (**C.char)(unsafe.Pointer(C.malloc(C.size_t(uintptr(l) * unsafe.Sizeof(uintptr(0))))))
 	for i := 0; i < l; i++ {
-		*(**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(res)) + unsafe.Sizeof(uintptr(0))*uintptr(i))) = C.CString(gos[i])
+		*(**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(res)) + unsafe.Sizeof(uintptr(0))*uintptr(i))) = C.CString(goStrings[i])
 	}
 	return res
 }

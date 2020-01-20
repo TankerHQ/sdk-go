@@ -21,7 +21,7 @@ var _ = Describe("functional", func() {
 		aliceLaptop, _ = alice.CreateDevice()
 	})
 
-	Context("Bascis", func() {
+	Context("Basics", func() {
 
 		It("Starts and stops a session", func() {
 			aliceLaptop, err := alice.CreateDevice()
