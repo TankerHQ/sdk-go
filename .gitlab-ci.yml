@@ -89,8 +89,6 @@ mirror:
 deploy:
  stage: deploy
  when: manual
- only:
-   - master
  tags: [linux]
  script:
   - dmenv run -- python run-ci.py deploy --version $VERSION
