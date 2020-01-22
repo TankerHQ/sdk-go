@@ -141,7 +141,7 @@ func main() {
 }
 ```
 
-Before running it, set the AppID with the one you have created on your [dashbord](https://dashboard.tanker.io).
+Before running it, set the AppID with the one you have created on your [dashboard](https://dashboard.tanker.io).
 You MUST enable the test mode for this example to work.
 
 Then:
