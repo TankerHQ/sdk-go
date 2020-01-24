@@ -32,7 +32,7 @@ func getOidcIdToken(oidcConfig helpers.OidcConfig, userName string) (*string, er
 		return nil, err
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, _ := ioutil.ReadAll(response.Body)
 
 	var result map[string]json.RawMessage
 	if err = json.Unmarshal(body, &result); err != nil {
@@ -71,12 +71,14 @@ var _ = Describe("functional", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(session.Start(alice.Identity)).To(Equal(core.StatusIdentityRegistrationNeeded))
 		Expect(session.GenerateVerificationKey()).ToNot(BeNil())
+		defer session.Stop() // nolint: errCheck
 	})
 
 	It("Gets verification methods", func() {
 		alice := TestApp.CreateUser()
 		aliceLaptop, _ := alice.CreateDevice()
 		session, _ := aliceLaptop.Start()
+		defer session.Stop() // nolint: errCheck
 		methods, err := session.GetVerificationMethods()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(methods).To(HaveVerificationMethods(core.VerificationMethod{Type: core.VerificationMethodPassphrase}))
@@ -90,6 +92,7 @@ var _ = Describe("functional", func() {
 
 		aliceLaptop, _ := alice.CreateDevice()
 		session, _ := aliceLaptop.Start()
+		defer session.Stop() // nolint: errCheck
 		Expect(session.SetVerificationMethod(
 			core.EmailVerification{Email: aliceEmail, VerificationCode: *code},
 		)).To(Succeed())
@@ -134,6 +137,11 @@ var _ = Describe("functional", func() {
 			kevinOidcVerification = core.OidcVerification{*kevinIdToken}
 		})
 
+		AfterEach(func() {
+			martineLaptop.Stop() // nolint: errCheck
+			martinePhone.Stop()  // nolint: errCheck
+		})
+
 		It("Registers and verifies identity with an oidc id token", func() {
 			Expect(martineLaptop.RegisterIdentity(martineOidcVerification)).To(Succeed())
 			Expect(doVerification(martinePhone, martine.Identity, martineOidcVerification)).To(Equal(core.StatusReady))
@@ -162,6 +170,7 @@ var _ = Describe("functional", func() {
 			alice := TestApp.CreateUser()
 			aliceDevice, _ := alice.CreateDevice()
 			aliceLaptop, _ := aliceDevice.Start()
+			defer aliceLaptop.Stop() // nolint: errCheck
 
 			Expect(martineLaptop.RegisterIdentity(core.PassphraseVerification{"*****"})).To(Succeed())
 			martineEmail := TestApp.OidcConfig.Users["martine"].Email

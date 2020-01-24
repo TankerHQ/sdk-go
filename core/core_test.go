@@ -21,12 +21,13 @@ var _ = Describe("functional", func() {
 		aliceLaptop, _ = alice.CreateDevice()
 	})
 
-	Context("Bascis", func() {
+	Context("Basics", func() {
 
 		It("Starts and stops a session", func() {
 			aliceLaptop, err := alice.CreateDevice()
 			Expect(err).ToNot(HaveOccurred())
 			session, err := aliceLaptop.Start()
+			defer session.Stop() // nolint: errcheck
 			Expect(err).ToNot(HaveOccurred())
 			Expect(session).ToNot(BeNil())
 			Expect(session.GetStatus()).To(Equal(core.StatusReady))
@@ -43,7 +44,8 @@ var _ = Describe("functional", func() {
 		})
 
 		It("Starts and stops a session twice", func() {
-			aliceSession, err := aliceLaptop.Start()
+			aliceSession, _ := aliceLaptop.Start()
+			defer aliceSession.Stop() // nolint: errcheck
 			Expect(aliceSession.Stop()).To(Succeed())
 			Expect(aliceSession.GetStatus()).To(Equal(core.StatusStopped))
 
@@ -53,17 +55,18 @@ var _ = Describe("functional", func() {
 		})
 
 		It("Aborts Registration", func() {
-			aliceSession, err := aliceLaptop.CreateSession()
+			aliceSession, _ := aliceLaptop.CreateSession()
 			status, err := aliceSession.Start(alice.Identity)
+			defer aliceSession.Stop() // nolint: errcheck
 			Expect(err).ToNot(HaveOccurred())
 			Expect(status).To(Equal(core.StatusIdentityRegistrationNeeded))
 			Expect(aliceSession.Stop()).To(Succeed())
 			Expect(aliceSession.GetStatus()).To(Equal(core.StatusStopped))
 		})
 
-		// Note: crashes on Windows
 		It("Fails when it open the same device twice", func() {
 			session, err := aliceLaptop.Start()
+			defer session.Stop() // nolint: errcheck
 			Expect(err).ToNot(HaveOccurred())
 			Expect(session.GetStatus()).To(Equal(core.StatusReady))
 			_, err = aliceLaptop.Start()
@@ -122,6 +125,7 @@ var _ = Describe("functional", func() {
 
 		It("Encrypts and shares with bob", func() {
 			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errcheck
 			clearData := helpers.RandomBytes(1024 * 1024 * 3)
 			encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptOptions{Recipients: []string{bob.PublicIdentity}})
 			Expect(err).ToNot(HaveOccurred())
@@ -151,6 +155,7 @@ var _ = Describe("functional", func() {
 
 		It("Encrypts then shares with bob", func() {
 			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errcheck
 			clearData := helpers.RandomBytes(1024 * 1024 * 3)
 			encrypted, err := aliceSession.Encrypt(clearData, nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -175,6 +180,7 @@ var _ = Describe("functional", func() {
 			_, err = aliceSession.Encrypt(clearData, &core.EncryptOptions{Recipients: []string{*bobPublicProvisional}})
 			Expect(err).ToNot(HaveOccurred())
 			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errCheck
 			attachResult, err := bobSession.AttachProvisionalIdentity(*bobProvisional)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(attachResult.Status).To(Equal(core.StatusIdentityVerificationNeeded))
@@ -189,17 +195,18 @@ var _ = Describe("functional", func() {
 
 		It("Retrieves a user's device list", func() {
 			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errCheck
 			bobLaptopID, _ := bobSession.GetDeviceID()
 
 			device1, _ := bob.CreateDevice()
 			session1, _ := device1.Start()
-			defer session1.Stop()
+			defer session1.Stop() // nolint: errCheck
 			deviceID1, _ := session1.GetDeviceID()
 			Expect(bobSession.RevokeDevice(*deviceID1)).To(Succeed())
 
 			device2, _ := bob.CreateDevice()
 			session2, _ := device2.Start()
-			defer session2.Stop()
+			defer session2.Stop() // nolint: errCheck
 			deviceID2, _ := session2.GetDeviceID()
 
 			devices, err := bobSession.GetDeviceList()
@@ -209,6 +216,26 @@ var _ = Describe("functional", func() {
 				core.DeviceDescription{*deviceID2, false},
 				core.DeviceDescription{*bobLaptopID, false},
 			))
+		})
+
+		It("Receives a signal and an error when revoked", func() {
+			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errCheck
+
+			device1, _ := bob.CreateDevice()
+			session1, _ := device1.Start()
+			defer session1.Stop() // nolint: errCheck
+			deviceID1, _ := session1.GetDeviceID()
+			Expect(bobSession.RevokeDevice(*deviceID1)).To(Succeed())
+
+			clearData := helpers.RandomBytes(12)
+			encrypted, err := bobSession.Encrypt(clearData, nil)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = session1.Decrypt(encrypted)
+			Expect(err).To(HaveOccurred())
+			terror, ok := (err).(core.Error)
+			Expect(ok).To(BeTrue())
+			Expect(terror.Code()).To(Equal(core.ErrorDeviceRevoked))
 		})
 	})
 })
