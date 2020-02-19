@@ -19,6 +19,8 @@ const (
 	ErrorExpiredVerification
 	ErrorIoError
 	ErrorDeviceRevoked
+
+	ErrorConflict
 )
 
 // Error is the Tanker error interface. Cast the error returned by
