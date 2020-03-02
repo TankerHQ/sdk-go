@@ -21,6 +21,34 @@ var _ = Describe("functional", func() {
 		aliceLaptop, _ = alice.CreateDevice()
 	})
 
+	Context("Passphrase", func() {
+		It("fails to hash an empty passphrase", func() {
+			_, err := core.HashPassphrase("")
+			Expect(err).To(HaveOccurred())
+			terror, ok := err.(core.Error)
+			Expect(ok).To(BeTrue())
+			Expect(terror.Code()).To(Equal(core.ErrorInvalidArgument))
+		})
+
+		It("hashes a test vector 1", func() {
+			input := "super secretive password"
+			expected := "UYNRgDLSClFWKsJ7dl9uPJjhpIoEzadksv/Mf44gSHI="
+
+			hashed, err := core.HashPassphrase(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hashed).To(Equal(expected))
+		})
+
+		It("hashes a test vector 2", func() {
+			input := "test éå 한국어 😃"
+			expected := "Pkn/pjub2uwkBDpt2HUieWOXP5xLn0Zlen16ID4C7jI="
+
+			hashed, err := core.HashPassphrase(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hashed).To(Equal(expected))
+		})
+	})
+
 	Context("Basics", func() {
 
 		It("Starts and stops a session", func() {

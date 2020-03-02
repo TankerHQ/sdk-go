@@ -11,6 +11,7 @@ import ci.cpp
 import cli_ui as ui
 
 PROFILE_OS_ARCHS = {
+    "default": ["linux", "amd64"],
     "gcc8": ["linux", "amd64"],
     "macos": ["darwin", "amd64"],
     "mingw32": ["windows", "386"],
