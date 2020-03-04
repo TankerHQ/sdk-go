@@ -82,6 +82,17 @@ func NativeVersion() string {
 	return C.GoString(C.tanker_version_string())
 }
 
+// HashPassphrase allows to hash a passphrase before sending it to your
+// application server, read the documentation for more detail
+func HashPassphrase(passphrase string) (string, error) {
+	chashed, err := await(C.tanker_hash_passphrase(C.CString(passphrase)))
+	if err != nil {
+		return "", err
+	}
+	hashed := C.GoString((*C.char)(unsafe.Pointer(chashed)))
+	return hashed, nil
+}
+
 // TankerOptions defines the options needed to create a new Tanker
 // instance with NewTanker().
 type TankerOptions struct {
