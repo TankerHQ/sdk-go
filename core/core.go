@@ -82,10 +82,10 @@ func NativeVersion() string {
 	return C.GoString(C.tanker_version_string())
 }
 
-// HashPassphrase allows to hash a passphrase before sending it to your
+// PrehashPassword allows to hash a password before sending it to your
 // application server, read the documentation for more detail
-func HashPassphrase(passphrase string) (string, error) {
-	chashed, err := await(C.tanker_hash_passphrase(C.CString(passphrase)))
+func PrehashPassword(password string) (string, error) {
+	chashed, err := await(C.tanker_prehash_password(C.CString(password)))
 	if err != nil {
 		return "", err
 	}
