@@ -31,7 +31,6 @@ def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -
         )
     elif use_tanker == "same-as-branch":
         workspace = ci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
-        src_path = workspace / "sdk-go"
         ci.conan.export(src_path=workspace / "sdk-native", ref_or_channel="tanker/dev")
     # fmt: off
     ci.conan.run(
@@ -126,7 +125,7 @@ def main() -> None:
     )
     install_deps_parser.add_argument("--profile", required=True)
 
-    build_and_test_parser = subparsers.add_parser("build-and-test")
+    subparsers.add_parser("build-and-test")
 
     subparsers.add_parser("mirror")
 
