@@ -73,7 +73,7 @@ type DeviceDescription struct {
 
 // Version returns the current version of this SDK.
 func Version() string {
-	currentVersion := "dev"
+	currentVersion := "2.3.1-beta1"
 	return currentVersion
 }
 
