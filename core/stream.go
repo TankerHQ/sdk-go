@@ -95,8 +95,8 @@ func (s *OutputStream) GetResourceID() (*string, error) {
 }
 
 // StreamEncrypt creates an OutputStream for encryption. The stream data will be shared according
-// to the EncryptOptions passed. The Reader passed should contains the clear data.
-func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptOptions) (*OutputStream, error) {
+// to the EncryptionOptions passed. The Reader passed should contains the clear data.
+func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptionOptions) (*OutputStream, error) {
 	var coptions *C.tanker_encrypt_options_t = nil
 	if options != nil {
 		coptions = convertOptions(*options)
