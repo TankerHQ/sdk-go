@@ -8,4 +8,5 @@ require (
 	github.com/onsi/ginkgo v1.10.2
 	github.com/onsi/gomega v1.7.0
 	github.com/satori/go.uuid v1.2.0
+	golang.org/x/text v0.3.2 // indirect
 )
