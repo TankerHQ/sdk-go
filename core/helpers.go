@@ -26,7 +26,7 @@ func freeCArray(array **C.char, size int) {
 	C.free(unsafe.Pointer(array))
 }
 
-func convertOptions(options EncryptOptions) *C.tanker_encrypt_options_t {
+func convertOptions(options EncryptionOptions) *C.tanker_encrypt_options_t {
 	return &C.tanker_encrypt_options_t{
 		version:                        2,
 		recipient_public_identities:    toCArray(options.Recipients),

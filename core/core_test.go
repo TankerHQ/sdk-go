@@ -155,7 +155,7 @@ var _ = Describe("functional", func() {
 			bobSession, _ := bobLaptop.Start()
 			defer bobSession.Stop() // nolint: errcheck
 			clearData := helpers.RandomBytes(1024 * 1024 * 3)
-			encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptOptions{Recipients: []string{bob.PublicIdentity}})
+			encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptionOptions{Recipients: []string{bob.PublicIdentity}})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(encrypted).ToNot(HaveLen(0))
 			decrypted, err := bobSession.Decrypt(encrypted)
@@ -205,7 +205,7 @@ var _ = Describe("functional", func() {
 			bobPublicProvisional, err := identity.GetPublicIdentity(*bobProvisional)
 			Expect(err).ToNot(HaveOccurred())
 			// Trigger the creation of the provisional Identity on the Tanker Server
-			_, err = aliceSession.Encrypt(clearData, &core.EncryptOptions{Recipients: []string{*bobPublicProvisional}})
+			_, err = aliceSession.Encrypt(clearData, &core.EncryptionOptions{Recipients: []string{*bobPublicProvisional}})
 			Expect(err).ToNot(HaveOccurred())
 			bobSession, _ := bobLaptop.Start()
 			defer bobSession.Stop() // nolint: errCheck

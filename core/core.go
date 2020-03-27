@@ -21,8 +21,8 @@ const (
 	StatusIdentityVerificationNeeded
 )
 
-// EncryptOptions contains user and group recipients to share with during an @Encrypt()
-type EncryptOptions struct {
+// EncryptionOptions contains user and group recipients to share with during an @Encrypt()
+type EncryptionOptions struct {
 	// Recipients is a list of the public identities of each recipient to share with
 	Recipients []string
 	// Groups is a list of group ids to share with
@@ -194,8 +194,8 @@ func (t *Tanker) GetDeviceID() (*string, error) {
 }
 
 // Encrypt encrypts the passed []byte and returns the result. To share the resulting
-// encrypted resource with either or both individuals and groups, fill the EncryptOptions parameter.
-func (t *Tanker) Encrypt(clearData []byte, options *EncryptOptions) ([]byte, error) {
+// encrypted resource with either or both individuals and groups, fill the EncryptionOptions parameter.
+func (t *Tanker) Encrypt(clearData []byte, options *EncryptionOptions) ([]byte, error) {
 	if clearData == nil {
 		return nil, newError(ErrorInvalidArgument, "clearData must not be nil")
 	}

@@ -177,7 +177,7 @@ var _ = Describe("functional", func() {
 			martineProvisionalIdentity, _ := identity.CreateProvisional(TestApp.IdConfig, martineEmail)
 			martinePublicIdentity, _ := identity.GetPublicIdentity(*martineProvisionalIdentity)
 			clearText := helpers.RandomBytes(15)
-			encrypted, _ := aliceLaptop.Encrypt(clearText, &core.EncryptOptions{Recipients: []string{*martinePublicIdentity}})
+			encrypted, _ := aliceLaptop.Encrypt(clearText, &core.EncryptionOptions{Recipients: []string{*martinePublicIdentity}})
 
 			attachResult, err := martineLaptop.AttachProvisionalIdentity(*martineProvisionalIdentity)
 			Expect(err).ToNot(HaveOccurred())
