@@ -2,3 +2,4 @@
 *.egg-info/
 core/ctanker/
 core/cgo_*
+.idea/
