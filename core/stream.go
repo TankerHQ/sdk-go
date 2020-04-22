@@ -18,6 +18,10 @@ static tanker_future_t *gotanker_stream_encrypt(tanker_t *ctanker, void *additio
 	return tanker_stream_encrypt(ctanker, gotanker_proxy_input_source_read, additional_data, options);
 }
 
+static tanker_future_t *gotanker_encryption_session_stream_encrypt(tanker_encryption_session_t *csession, void *additional_data) {
+	return tanker_encryption_session_stream_encrypt(csession, gotanker_proxy_input_source_read, additional_data);
+}
+
 static tanker_future_t *gotanker_stream_decrypt(tanker_t *ctanker, void *additional_data) {
 	return tanker_stream_decrypt(ctanker, gotanker_proxy_input_source_read, additional_data);
 }
@@ -109,6 +113,25 @@ func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptionOptions) (*O
 	}
 	wrapped := gopointer.Save(&wrapper)
 	result, err := await(C.gotanker_stream_encrypt(t.instance, wrapped, coptions))
+	if err != nil {
+		return nil, err
+	}
+	return &OutputStream{
+		wrapper:  &wrapper,
+		todelete: wrapped,
+		stream:   (*C.tanker_stream_t)(unsafe.Pointer(result)),
+	}, nil
+}
+
+// StreamEncrypt creates an OutputStream of data encrypted with the encryption session.
+// The Reader passed should contain the clear data.
+func (s *EncryptionSession) StreamEncrypt(reader io.Reader) (*OutputStream, error) {
+	wrapper := streamWrapper{
+		reader: reader,
+		err:    nil,
+	}
+	wrapped := gopointer.Save(&wrapper)
+	result, err := await(C.gotanker_encryption_session_stream_encrypt(s.instance, wrapped))
 	if err != nil {
 		return nil, err
 	}

@@ -320,3 +320,26 @@ func (t *Tanker) RevokeDevice(deviceID string) (err error) {
 	_, err = await(C.tanker_revoke_device(t.instance, cdeviceID))
 	return
 }
+
+// Create an encryption session that will allow doing multiple encryption operations with a reduced number of keys.
+func (t *Tanker) CreateEncryptionSession(recipients []string, groups []string) (*EncryptionSession, error) {
+	crecipients := toCArray(recipients)
+	cgroups := toCArray(groups)
+
+	csession, err := await(
+		C.tanker_encryption_session_open(
+			t.instance,
+			crecipients,
+			C.uint64_t(len(recipients)),
+			cgroups,
+			C.uint64_t(len(groups)),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &EncryptionSession{
+		instance: (*C.tanker_encryption_session_t)(csession),
+	}, nil
+}
