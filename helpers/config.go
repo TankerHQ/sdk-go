@@ -1,9 +1,7 @@
 package helpers
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/TankerHQ/identity-go/identity"
@@ -32,6 +30,14 @@ type TestConfig struct {
 	Oidc   OidcConfig
 }
 
+func safeGetEnv(key string) string {
+	v, exists := os.LookupEnv(key)
+	if !exists {
+		panic(fmt.Sprintf("%s is not set\n", key))
+	}
+	return v
+}
+
 func NewApp(testConfig TestConfig) (*App, error) {
 	AdminSession, err := core.NewAdmin(testConfig.Server.URL, testConfig.Server.IDToken)
 	if err != nil {
@@ -46,31 +52,27 @@ func NewApp(testConfig TestConfig) (*App, error) {
 	return &App{AdminSession, descriptor, testConfig.Server, testConfig.Oidc, idConfig}, nil
 }
 
-func LoadConfig(configFilePath string, configName string) (*TestConfig, error) {
-	file, err := os.Open(configFilePath)
-	if err != nil {
-		return nil, err
+func LoadConfig() (*TestConfig, error) {
+	serverConfig := ServerConfig{
+		URL:     safeGetEnv("TANKER_TRUSTCHAIND_URL"),
+		IDToken: safeGetEnv("TANKER_ID_TOKEN"),
 	}
-	content, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
+	users := map[string]UserConfig{
+		"martine": UserConfig{
+			Email:        safeGetEnv("TANKER_OIDC_MARTINE_EMAIL"),
+			RefreshToken: safeGetEnv("TANKER_OIDC_MARTINE_REFRESH_TOKEN"),
+		},
+		"kevin": UserConfig{
+			Email:        safeGetEnv("TANKER_OIDC_KEVIN_EMAIL"),
+			RefreshToken: safeGetEnv("TANKER_OIDC_KEVIN_REFRESH_TOKEN"),
+		},
 	}
-	var configs map[string]json.RawMessage
-	err = json.Unmarshal(content, &configs)
-	if err != nil {
-		return nil, err
-	}
-	var serverConfig ServerConfig
-	if err = json.Unmarshal(configs[configName], &serverConfig); err != nil {
-		return nil, fmt.Errorf("Invalid config name %s", configName)
-	}
-	var oidcs map[string]json.RawMessage
-	if err = json.Unmarshal(configs["oidc"], &oidcs); err != nil {
-		return nil, fmt.Errorf("No valid oidc config found")
-	}
-	var oidc OidcConfig
-	if err = json.Unmarshal(oidcs["googleAuth"], &oidc); err != nil {
-		return nil, fmt.Errorf("Invalid oidc config name %s", "googleAuth")
+
+	oidc := OidcConfig{
+		ClientSecret: safeGetEnv("TANKER_OIDC_CLIENT_SECRET"),
+		ClientId:     safeGetEnv("TANKER_OIDC_CLIENT_ID"),
+		Provider:     safeGetEnv("TANKER_OIDC_PROVIDER"),
+		Users:        users,
 	}
 	return &TestConfig{serverConfig, oidc}, nil
 }

@@ -2,7 +2,6 @@ package core_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -13,14 +12,12 @@ import (
 )
 
 var (
-	tankerConfigFilePath = os.Getenv("TANKER_CONFIG_FILEPATH")
-	tankerConfigName     = os.Getenv("TANKER_CONFIG_NAME")
-	Config               helpers.TestConfig
-	TestApp              *helpers.App
+	Config  helpers.TestConfig
+	TestApp *helpers.App
 )
 
 var _ = BeforeSuite(func() {
-	Config, err := helpers.LoadConfig(tankerConfigFilePath, tankerConfigName)
+	Config, err := helpers.LoadConfig()
 	if err != nil {
 		Fail(err.Error())
 	}
@@ -38,9 +35,6 @@ var _ = AfterSuite(func() {
 })
 
 func TestSDK(t *testing.T) {
-	if len(tankerConfigFilePath) == 0 || len(tankerConfigName) == 0 {
-		panic("Tanker test config is invalid")
-	}
 	core.SetLogHandler(func(record core.LogRecord) {
 		fmt.Printf("[%c]{%s}'%s+%d': %s\n", record.Level, record.Category, record.File, record.Line, record.Message)
 	})
