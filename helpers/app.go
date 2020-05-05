@@ -14,7 +14,7 @@ type App struct {
 }
 
 func (app *App) GetVerificationCode(email string) (*string, error) {
-	return app.AdminSession.GetVerificationCode(app.Descriptor.ID, email)
+	return app.Descriptor.GetVerificationCode(app.Config.URL, email)
 }
 
 func (app App) EnableOidc() error {

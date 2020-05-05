@@ -45,7 +45,7 @@ var _ = Describe("Encryption sessions", func() {
 		aliceSession, _ := aliceLaptop.Start()
 		bobSession, _ := bobLaptop.Start()
 		defer aliceSession.Stop() // nolint: errcheck
-		defer bobSession.Stop() // nolint: errcheck
+		defer bobSession.Stop()   // nolint: errcheck
 
 		encSess, err := aliceSession.CreateEncryptionSession([]string{bob.PublicIdentity}, nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -62,7 +62,7 @@ var _ = Describe("Encryption sessions", func() {
 		aliceSession, _ := aliceLaptop.Start()
 		bobSession, _ := bobLaptop.Start()
 		defer aliceSession.Stop() // nolint: errcheck
-		defer bobSession.Stop() // nolint: errcheck
+		defer bobSession.Stop()   // nolint: errcheck
 
 		groupId, err := aliceSession.CreateGroup([]string{bob.PublicIdentity})
 		Expect(err).ToNot(HaveOccurred())
@@ -82,7 +82,7 @@ var _ = Describe("Encryption sessions", func() {
 		aliceSession, _ := aliceLaptop.Start()
 		bobSession, _ := bobLaptop.Start()
 		defer aliceSession.Stop() // nolint: errcheck
-		defer bobSession.Stop() // nolint: errcheck
+		defer bobSession.Stop()   // nolint: errcheck
 
 		encSess, err := aliceSession.CreateEncryptionSession([]string{bob.PublicIdentity}, nil)
 		Expect(err).ToNot(HaveOccurred())

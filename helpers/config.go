@@ -9,8 +9,9 @@ import (
 )
 
 type ServerConfig struct {
-	URL     string `json:"url"`
-	IDToken string `json:"idToken"`
+	AdminURL string
+	IDToken  string
+	URL      string
 }
 
 type UserConfig struct {
@@ -39,7 +40,7 @@ func safeGetEnv(key string) string {
 }
 
 func NewApp(testConfig TestConfig) (*App, error) {
-	AdminSession, err := core.NewAdmin(testConfig.Server.URL, testConfig.Server.IDToken)
+	AdminSession, err := core.NewAdmin(testConfig.Server.AdminURL, testConfig.Server.IDToken)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +55,9 @@ func NewApp(testConfig TestConfig) (*App, error) {
 
 func LoadConfig() (*TestConfig, error) {
 	serverConfig := ServerConfig{
-		URL:     safeGetEnv("TANKER_TRUSTCHAIND_URL"),
-		IDToken: safeGetEnv("TANKER_ID_TOKEN"),
+		AdminURL: safeGetEnv("TANKER_ADMIND_URL"),
+		IDToken:  safeGetEnv("TANKER_ID_TOKEN"),
+		URL:      safeGetEnv("TANKER_TRUSTCHAIND_URL"),
 	}
 	users := map[string]UserConfig{
 		"martine": UserConfig{
