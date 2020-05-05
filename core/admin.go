@@ -18,6 +18,7 @@ type Admin struct {
 // AppDescriptor contains properties of a Tanker application.
 type AppDescriptor struct {
 	Name       string
+	AuthToken  string
 	ID         string
 	PrivateKey string
 	PublicKey  string
@@ -51,6 +52,7 @@ func (adm Admin) NewApp(Name string) (*AppDescriptor, error) {
 	app := (*C.tanker_app_descriptor_t)(result)
 	that := &AppDescriptor{
 		Name:       C.GoString(app.name),
+		AuthToken:  C.GoString(app.auth_token),
 		ID:         C.GoString(app.id),
 		PrivateKey: C.GoString(app.private_key),
 		PublicKey:  C.GoString(app.public_key),
@@ -70,23 +72,6 @@ func (adm Admin) DeleteApp(AppID string) error {
 	return nil
 }
 
-// GetVerificationCode retrieves the verificaton code on a test app. The email provided must the
-// same as the one in the ProvisionalIdentity you want the verification code for. The Tanker application
-// must be a test application.
-func (adm *Admin) GetVerificationCode(AppID string, Email string) (*string, error) {
-	appID := C.CString(AppID)
-	email := C.CString(Email)
-	defer C.free(unsafe.Pointer(appID))
-	defer C.free(unsafe.Pointer(email))
-	result, err := await(C.tanker_admin_get_verification_code(adm.admin, appID, email))
-	defer C.free(result)
-	if err != nil {
-		return nil, err
-	}
-	code := C.GoString((*C.char)(result))
-	return &code, nil
-}
-
 // Update updates a Tanker application's settings.
 func (adm Admin) Update(AppID string, OidcClientId string, OidcProvider string) error {
 	appID := C.CString(AppID)
@@ -104,4 +89,25 @@ func (adm Admin) Update(AppID string, OidcClientId string, OidcProvider string) 
 // Destroy destroys this Admin session.
 func (adm Admin) Destroy() {
 	_, _ = await(C.tanker_admin_destroy(adm.admin))
+}
+
+// GetVerificationCode retrieves the verificaton code on a test app. The email provided must the
+// same as the one in the ProvisionalIdentity you want the verification code for. The Tanker application
+// must be a test application.
+func (app *AppDescriptor) GetVerificationCode(Url string, Email string) (*string, error) {
+	url := C.CString(Url)
+	appID := C.CString(app.ID)
+	authToken := C.CString(app.AuthToken)
+	email := C.CString(Email)
+	defer C.free(unsafe.Pointer(url))
+	defer C.free(unsafe.Pointer(appID))
+	defer C.free(unsafe.Pointer(authToken))
+	defer C.free(unsafe.Pointer(email))
+	result, err := await(C.tanker_get_verification_code(url, appID, authToken, email))
+	defer C.free(result)
+	if err != nil {
+		return nil, err
+	}
+	code := C.GoString((*C.char)(result))
+	return &code, nil
 }
