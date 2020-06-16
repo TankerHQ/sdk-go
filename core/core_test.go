@@ -198,7 +198,7 @@ var _ = Describe("functional", func() {
 		})
 
 		It("Claims the same provisional Identity twice", func() {
-			bobEmail := "bob@gmail.com"
+			bobEmail := "bob.test@tanker.io"
 			bobProvisional, err := identity.CreateProvisional(TestApp.IdConfig, bobEmail)
 			Expect(err).ToNot(HaveOccurred())
 			clearData := helpers.RandomBytes(12)

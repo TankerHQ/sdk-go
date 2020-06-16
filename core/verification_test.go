@@ -86,7 +86,7 @@ var _ = Describe("functional", func() {
 
 	It("Set verification method", func() {
 		alice := TestApp.CreateUser()
-		aliceEmail := "alice@domain.io"
+		aliceEmail := "alice.test@tanker.io"
 		code, err := TestApp.GetVerificationCode(aliceEmail)
 		Expect(err).ToNot(HaveOccurred())
 
