@@ -104,8 +104,8 @@ func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptionOptions) (*O
 	var coptions *C.tanker_encrypt_options_t = nil
 	if options != nil {
 		coptions = convertEncryptionOptions(*options)
-		defer freeCArray(coptions.recipient_public_identities, len(options.Recipients))
-		defer freeCArray(coptions.recipient_gids, len(options.Groups))
+		defer freeCArray(coptions.share_with_users, len(options.Recipients))
+		defer freeCArray(coptions.share_with_groups, len(options.Groups))
 	}
 	wrapper := streamWrapper{
 		reader: reader,

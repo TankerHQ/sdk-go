@@ -9,7 +9,7 @@ import "unsafe"
 
 func toCArray(goStrings []string) **C.char {
 	l := len(goStrings)
-	if len(goStrings) == 0 {
+	if l == 0 {
 		return nil
 	}
 	res := (**C.char)(unsafe.Pointer(C.malloc(C.size_t(uintptr(l) * unsafe.Sizeof(uintptr(0))))))
@@ -28,10 +28,21 @@ func freeCArray(array **C.char, size int) {
 
 func convertEncryptionOptions(options EncryptionOptions) *C.tanker_encrypt_options_t {
 	return &C.tanker_encrypt_options_t{
-		version:                        2,
-		recipient_public_identities:    toCArray(options.Recipients),
-		nb_recipient_public_identities: C.uint32_t(len(options.Recipients)),
-		recipient_gids:                 toCArray(options.Groups),
-		nb_recipient_gids:              C.uint32_t(len(options.Groups)),
+		version:           3,
+		share_with_users:  toCArray(options.Recipients),
+		nb_users:          C.uint32_t(len(options.Recipients)),
+		share_with_groups: toCArray(options.Groups),
+		nb_groups:         C.uint32_t(len(options.Groups)),
+		share_with_self:   true,
+	}
+}
+
+func convertSharingOptions(options EncryptionOptions) *C.tanker_sharing_options_t {
+	return &C.tanker_sharing_options_t{
+		version:           1,
+		share_with_users:  toCArray(options.Recipients),
+		nb_users:          C.uint32_t(len(options.Recipients)),
+		share_with_groups: toCArray(options.Groups),
+		nb_groups:         C.uint32_t(len(options.Groups)),
 	}
 }
