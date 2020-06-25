@@ -50,6 +50,7 @@ def get_deps_link_flags(install_path: Path) -> str:
     deps = []
     for dep in conan_info["dependencies"]:
         deps += dep["libs"]
+        deps += dep["system_libs"]
     return " ".join([f"-l{d}" for d in deps])
 
 
