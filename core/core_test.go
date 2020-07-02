@@ -63,12 +63,12 @@ var _ = Describe("functional", func() {
 			Expect(session.GetStatus()).To(Equal(core.StatusStopped))
 		})
 
-		It("Returns a proper error when it fails", func() {
-			_, err := core.NewTanker(core.TankerOptions{"", "/tmp", &TestApp.Config.URL})
+		It("Creating a Tanker returns a proper error when it fails", func() {
+			_, err := core.NewTanker(core.TankerOptions{"invalid base 64", "/tmp", &TestApp.Config.URL})
 			Expect(err).To(HaveOccurred())
 			terror, ok := (err).(core.Error)
 			Expect(ok).To(BeTrue())
-			Expect(terror.Code()).To(Equal(core.ErrorInternalError))
+			Expect(terror.Code()).To(Equal(core.ErrorInvalidArgument))
 		})
 
 		It("Starts and stops a session twice", func() {
