@@ -210,9 +210,9 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptionOptions) ([]byte, 
 	encryptedData := make([]byte, encryptedSize)
 	var coptions *C.tanker_encrypt_options_t = nil
 	if options != nil {
-		coptions = convertOptions(*options)
-		defer freeCArray(coptions.recipient_public_identities, len(options.Recipients))
-		defer freeCArray(coptions.recipient_gids, len(options.Groups))
+		coptions = convertEncryptionOptions(*options)
+		defer freeCArray(coptions.share_with_users, len(options.Recipients))
+		defer freeCArray(coptions.share_with_groups, len(options.Groups))
 	}
 	_, err := await(
 		C.tanker_encrypt(
@@ -278,18 +278,20 @@ func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []strin
 		return fmt.Errorf("ResourceIDs must not be nil nor empty")
 	}
 	cresourceIds := toCArray(resourceIDs)
-	crecipients := toCArray(recipients)
-	cgroups := toCArray(groups)
+	coptions := convertSharingOptions(EncryptionOptions{
+		recipients,
+		groups,
+	})
+	defer freeCArray(coptions.share_with_users, len(recipients))
+	defer freeCArray(coptions.share_with_groups, len(groups))
+	defer freeCArray(cresourceIds, len(resourceIDs))
 
 	_, err := await(
 		C.tanker_share(
 			t.instance,
-			crecipients,
-			C.uint64_t(len(recipients)),
-			cgroups,
-			C.uint64_t(len(groups)),
 			cresourceIds,
 			C.uint64_t(len(resourceIDs)),
+			coptions,
 		),
 	)
 	return err
@@ -323,16 +325,17 @@ func (t *Tanker) RevokeDevice(deviceID string) (err error) {
 
 // Create an encryption session that will allow doing multiple encryption operations with a reduced number of keys.
 func (t *Tanker) CreateEncryptionSession(recipients []string, groups []string) (*EncryptionSession, error) {
-	crecipients := toCArray(recipients)
-	cgroups := toCArray(groups)
+	coptions := convertEncryptionOptions(EncryptionOptions{
+		recipients,
+		groups,
+	})
+	defer freeCArray(coptions.share_with_users, len(recipients))
+	defer freeCArray(coptions.share_with_groups, len(groups))
 
 	csession, err := await(
 		C.tanker_encryption_session_open(
 			t.instance,
-			crecipients,
-			C.uint64_t(len(recipients)),
-			cgroups,
-			C.uint64_t(len(groups)),
+			coptions,
 		),
 	)
 	if err != nil {

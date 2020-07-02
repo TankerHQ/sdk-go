@@ -103,9 +103,9 @@ func (s *OutputStream) GetResourceID() (*string, error) {
 func (t *Tanker) StreamEncrypt(reader io.Reader, options *EncryptionOptions) (*OutputStream, error) {
 	var coptions *C.tanker_encrypt_options_t = nil
 	if options != nil {
-		coptions = convertOptions(*options)
-		defer freeCArray(coptions.recipient_public_identities, len(options.Recipients))
-		defer freeCArray(coptions.recipient_gids, len(options.Groups))
+		coptions = convertEncryptionOptions(*options)
+		defer freeCArray(coptions.share_with_users, len(options.Recipients))
+		defer freeCArray(coptions.share_with_groups, len(options.Groups))
 	}
 	wrapper := streamWrapper{
 		reader: reader,
