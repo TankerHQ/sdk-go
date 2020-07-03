@@ -9,7 +9,7 @@
 
 # Encryption SDKs for Go
 
-<a href="#readme"><img src="./src/public/tanker.png" alt="Tanker logo" width="180" /></a>
+<a href="#readme"><img src="https://tanker.io/images/github-logo.png" alt="Tanker logo" width="180" /></a>
 
 
 [Overview](#overview) · [Core](#tanker-core) · [Identity](#identity-management) · [Other platforms](#other-platforms) · [Contributing](#contributing) · [License](#license)
