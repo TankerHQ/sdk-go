@@ -83,7 +83,10 @@ def install_deps(profile: str, use_tanker: str) -> None:
 
 
 def build_and_check() -> None:
-    ci.run("go", "test", "-v", "-count=1", "./...")
+    # -v shows the logs as they appear, even if tests wlll succeed
+    # -ginkgo.v shows the name of each test as it starts
+    # -count=1 forces the tests to run instead of showing a cached result
+    ci.run("go", "test", "./...", "-v", "-ginkgo.v", "-count=1")
 
 
 def make_bump_commit(version: str):
