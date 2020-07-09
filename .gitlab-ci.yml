@@ -119,8 +119,10 @@ mirror:
     - poetry run python run-ci.py  mirror
 
 deploy:
- stage: deploy
- when: manual
- tags: [linux]
- script:
-  - poetry run python run-ci.py deploy --version $VERSION
+  stage: deploy
+  when: manual
+  only:
+    - master
+  tags: [linux]
+  script:
+    - poetry run python run-ci.py deploy --version $VERSION
