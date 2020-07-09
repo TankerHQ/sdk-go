@@ -18,7 +18,7 @@ PROFILE_OS_ARCHS = {
 }
 
 
-def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -> None:
+def install_tanker_native(profile: str, install_folder: Path, use_tanker: str, native_debug: bool) -> None:
     cwd = Path.getcwd()
     conanfile = cwd / "conanfile-local.txt"
 
@@ -32,6 +32,10 @@ def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -
     elif use_tanker == "same-as-branch":
         workspace = ci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
         ci.conan.export(src_path=workspace / "sdk-native", ref_or_channel="tanker/dev")
+
+    if native_debug:
+        install_args += ["--settings", "tanker:build_type=Debug"]
+
     # fmt: off
     ci.conan.run(
         "install", conanfile,
@@ -72,13 +76,13 @@ def generate_cgo_file(install_path: Path, go_os: str, go_arch: str) -> None:
         f.write(content)
 
 
-def install_deps(profile: str, use_tanker: str) -> None:
+def install_deps(profile: str, use_tanker: str, native_debug: bool) -> None:
     profile_prefix = profile.split("-")[0]
     go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
     deps_install_path = Path.getcwd() / "core/ctanker" / f"{go_os}-{go_arch}"
     deps_install_path.rmtree_p()
 
-    install_tanker_native(profile, deps_install_path, use_tanker)
+    install_tanker_native(profile, deps_install_path, use_tanker, native_debug)
     generate_cgo_file(deps_install_path, go_os, go_arch)
 
 
@@ -125,6 +129,9 @@ def main() -> None:
     install_deps_parser.add_argument(
         "--use-tanker", choices=["deployed", "local", "same-as-branch"], default="local"
     )
+    install_deps_parser.add_argument(
+        "--native-debug", action="store_true", dest="native_debug", default=False
+    )
     install_deps_parser.add_argument("--profile", required=True)
 
     subparsers.add_parser("build-and-test")
@@ -140,7 +147,7 @@ def main() -> None:
         ci.conan.update_config()
 
     if args.command == "install-deps":
-        install_deps(args.profile, args.use_tanker)
+        install_deps(args.profile, args.use_tanker, args.native_debug)
     elif args.command == "build-and-test":
         build_and_check()
     elif args.command == "deploy":
