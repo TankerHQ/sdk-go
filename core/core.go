@@ -27,6 +27,8 @@ type EncryptionOptions struct {
 	ShareWithUsers []string
 	// ShareWithGroups is a list of group IDs to share with
 	ShareWithGroups []string
+	// ShareWithSelf must be true to allow the author to decrypt the resource
+	ShareWithSelf bool
 }
 
 // SharingOptions contains user and group recipients to share with with @Share()

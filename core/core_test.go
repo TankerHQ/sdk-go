@@ -163,6 +163,25 @@ var _ = Describe("functional", func() {
 			Expect(decrypted).To(Equal(clearData))
 		})
 
+		It("Encrypts and shares with bob but not self", func() {
+			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errcheck
+			clearData := helpers.RandomBytes(1024 * 1024 * 3)
+			encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptionOptions{ShareWithUsers: []string{bob.PublicIdentity}, ShareWithSelf: false})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(encrypted).ToNot(HaveLen(0))
+
+			_, err = aliceSession.Decrypt(encrypted)
+			Expect(err).To(HaveOccurred())
+			terror, ok := (err).(core.Error)
+			Expect(ok).To(BeTrue())
+			Expect(terror.Code()).To(Equal(core.ErrorInvalidArgument))
+
+			decrypted, err := bobSession.Decrypt(encrypted)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(decrypted).To(Equal(clearData))
+		})
+
 		It("Encrypts an empty array", func() {
 			encrypted, err := aliceSession.Encrypt([]byte{}, nil)
 			Expect(err).ToNot(HaveOccurred())

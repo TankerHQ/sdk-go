@@ -33,7 +33,7 @@ func convertEncryptionOptions(options EncryptionOptions) *C.tanker_encrypt_optio
 		nb_users:          C.uint32_t(len(options.ShareWithUsers)),
 		share_with_groups: toCArray(options.ShareWithGroups),
 		nb_groups:         C.uint32_t(len(options.ShareWithGroups)),
-		share_with_self:   true,
+		share_with_self:   C.bool(options.ShareWithSelf),
 	}
 }
 
