@@ -23,10 +23,10 @@ const (
 
 // EncryptionOptions contains user and group recipients to share with during an @Encrypt()
 type EncryptionOptions struct {
-	// Recipients is a list of the public identities of each recipient to share with
-	Recipients []string
-	// Groups is a list of group ids to share with
-	Groups []string
+	// ShareWithUsers is a list of the public identities of each recipient to share with
+	ShareWithUsers []string
+	// ShareWithGroups is a list of group ids to share with
+	ShareWithGroups []string
 }
 
 // unsafeANSIToString transforms a *C.char to a GoString. The *C.char is free'd.
@@ -211,8 +211,8 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptionOptions) ([]byte, 
 	var coptions *C.tanker_encrypt_options_t = nil
 	if options != nil {
 		coptions = convertEncryptionOptions(*options)
-		defer freeCArray(coptions.share_with_users, len(options.Recipients))
-		defer freeCArray(coptions.share_with_groups, len(options.Groups))
+		defer freeCArray(coptions.share_with_users, len(options.ShareWithUsers))
+		defer freeCArray(coptions.share_with_groups, len(options.ShareWithGroups))
 	}
 	_, err := await(
 		C.tanker_encrypt(

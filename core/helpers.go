@@ -29,10 +29,10 @@ func freeCArray(array **C.char, size int) {
 func convertEncryptionOptions(options EncryptionOptions) *C.tanker_encrypt_options_t {
 	return &C.tanker_encrypt_options_t{
 		version:           3,
-		share_with_users:  toCArray(options.Recipients),
-		nb_users:          C.uint32_t(len(options.Recipients)),
-		share_with_groups: toCArray(options.Groups),
-		nb_groups:         C.uint32_t(len(options.Groups)),
+		share_with_users:  toCArray(options.ShareWithUsers),
+		nb_users:          C.uint32_t(len(options.ShareWithUsers)),
+		share_with_groups: toCArray(options.ShareWithGroups),
+		nb_groups:         C.uint32_t(len(options.ShareWithGroups)),
 		share_with_self:   true,
 	}
 }
@@ -40,9 +40,9 @@ func convertEncryptionOptions(options EncryptionOptions) *C.tanker_encrypt_optio
 func convertSharingOptions(options EncryptionOptions) *C.tanker_sharing_options_t {
 	return &C.tanker_sharing_options_t{
 		version:           1,
-		share_with_users:  toCArray(options.Recipients),
-		nb_users:          C.uint32_t(len(options.Recipients)),
-		share_with_groups: toCArray(options.Groups),
-		nb_groups:         C.uint32_t(len(options.Groups)),
+		share_with_users:  toCArray(options.ShareWithUsers),
+		nb_users:          C.uint32_t(len(options.ShareWithUsers)),
+		share_with_groups: toCArray(options.ShareWithGroups),
+		nb_groups:         C.uint32_t(len(options.ShareWithGroups)),
 	}
 }
