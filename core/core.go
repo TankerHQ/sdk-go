@@ -324,13 +324,15 @@ func (t *Tanker) RevokeDevice(deviceID string) (err error) {
 }
 
 // Create an encryption session that will allow doing multiple encryption operations with a reduced number of keys.
-func (t *Tanker) CreateEncryptionSession(recipients []string, groups []string) (*EncryptionSession, error) {
-	coptions := convertEncryptionOptions(EncryptionOptions{
-		recipients,
-		groups,
-	})
-	defer freeCArray(coptions.share_with_users, len(recipients))
-	defer freeCArray(coptions.share_with_groups, len(groups))
+func (t *Tanker) CreateEncryptionSession(encryptionOptions *EncryptionOptions) (*EncryptionSession, error) {
+	var coptions *C.tanker_encrypt_options_t = nil
+	if encryptionOptions != nil {
+		coptions = convertEncryptionOptions(*encryptionOptions)
+		defer freeCArray(coptions.share_with_users, len(encryptionOptions.ShareWithUsers))
+		defer freeCArray(coptions.share_with_groups, len(encryptionOptions.ShareWithGroups))
+	} else {
+		coptions = nil
+	}
 
 	csession, err := await(
 		C.tanker_encryption_session_open(

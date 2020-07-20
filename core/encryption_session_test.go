@@ -2,8 +2,10 @@ package core_test
 
 import (
 	"bytes"
-	"github.com/TankerHQ/sdk-go/v2/helpers"
 	"io/ioutil"
+
+	"github.com/TankerHQ/sdk-go/v2/core"
+	"github.com/TankerHQ/sdk-go/v2/helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,7 +30,7 @@ var _ = Describe("Encryption sessions", func() {
 	It("Resource ID of the session matches the ciphertext", func() {
 		msg := []byte("Reston - Court House")
 		aliceSession, _ := aliceLaptop.Start()
-		encSess, err := aliceSession.CreateEncryptionSession(nil, nil)
+		encSess, err := aliceSession.CreateEncryptionSession(nil)
 		Expect(err).ToNot(HaveOccurred())
 		defer aliceSession.Stop() // nolint: errcheck
 		encrypted, err := encSess.Encrypt(msg)
@@ -47,7 +49,7 @@ var _ = Describe("Encryption sessions", func() {
 		defer aliceSession.Stop() // nolint: errcheck
 		defer bobSession.Stop()   // nolint: errcheck
 
-		encSess, err := aliceSession.CreateEncryptionSession([]string{bob.PublicIdentity}, nil)
+		encSess, err := aliceSession.CreateEncryptionSession(&core.EncryptionOptions{ShareWithUsers: []string{bob.PublicIdentity}})
 		Expect(err).ToNot(HaveOccurred())
 		encrypted, err := encSess.Encrypt(msg)
 		Expect(err).ToNot(HaveOccurred())
@@ -66,7 +68,7 @@ var _ = Describe("Encryption sessions", func() {
 
 		groupId, err := aliceSession.CreateGroup([]string{bob.PublicIdentity})
 		Expect(err).ToNot(HaveOccurred())
-		encSess, err := aliceSession.CreateEncryptionSession(nil, []string{*groupId})
+		encSess, err := aliceSession.CreateEncryptionSession(&core.EncryptionOptions{ShareWithGroups: []string{*groupId}})
 		Expect(err).ToNot(HaveOccurred())
 		encrypted, err := encSess.Encrypt(msg)
 		Expect(err).ToNot(HaveOccurred())
@@ -84,7 +86,7 @@ var _ = Describe("Encryption sessions", func() {
 		defer aliceSession.Stop() // nolint: errcheck
 		defer bobSession.Stop()   // nolint: errcheck
 
-		encSess, err := aliceSession.CreateEncryptionSession([]string{bob.PublicIdentity}, nil)
+		encSess, err := aliceSession.CreateEncryptionSession(&core.EncryptionOptions{ShareWithUsers: []string{bob.PublicIdentity}})
 		Expect(err).ToNot(HaveOccurred())
 		encrypted, err := encSess.StreamEncrypt(sourceStream)
 		Expect(err).ToNot(HaveOccurred())
