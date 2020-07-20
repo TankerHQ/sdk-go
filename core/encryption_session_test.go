@@ -49,7 +49,9 @@ var _ = Describe("Encryption sessions", func() {
 		defer aliceSession.Stop() // nolint: errcheck
 		defer bobSession.Stop()   // nolint: errcheck
 
-		encSess, err := aliceSession.CreateEncryptionSession(&core.EncryptionOptions{ShareWithUsers: []string{bob.PublicIdentity}})
+		encryptionOptions := core.NewEncryptionOptions()
+		encryptionOptions.ShareWithUsers = []string{bob.PublicIdentity}
+		encSess, err := aliceSession.CreateEncryptionSession(&encryptionOptions)
 		Expect(err).ToNot(HaveOccurred())
 		encrypted, err := encSess.Encrypt(msg)
 		Expect(err).ToNot(HaveOccurred())
@@ -68,7 +70,9 @@ var _ = Describe("Encryption sessions", func() {
 
 		groupId, err := aliceSession.CreateGroup([]string{bob.PublicIdentity})
 		Expect(err).ToNot(HaveOccurred())
-		encSess, err := aliceSession.CreateEncryptionSession(&core.EncryptionOptions{ShareWithGroups: []string{*groupId}})
+		encryptionOptions := core.NewEncryptionOptions()
+		encryptionOptions.ShareWithGroups = []string{*groupId}
+		encSess, err := aliceSession.CreateEncryptionSession(&encryptionOptions)
 		Expect(err).ToNot(HaveOccurred())
 		encrypted, err := encSess.Encrypt(msg)
 		Expect(err).ToNot(HaveOccurred())
@@ -86,7 +90,9 @@ var _ = Describe("Encryption sessions", func() {
 		defer aliceSession.Stop() // nolint: errcheck
 		defer bobSession.Stop()   // nolint: errcheck
 
-		encSess, err := aliceSession.CreateEncryptionSession(&core.EncryptionOptions{ShareWithUsers: []string{bob.PublicIdentity}})
+		encryptionOptions := core.NewEncryptionOptions()
+		encryptionOptions.ShareWithUsers = []string{bob.PublicIdentity}
+		encSess, err := aliceSession.CreateEncryptionSession(&encryptionOptions)
 		Expect(err).ToNot(HaveOccurred())
 		encrypted, err := encSess.StreamEncrypt(sourceStream)
 		Expect(err).ToNot(HaveOccurred())

@@ -27,7 +27,9 @@ var _ = Describe("functional", func() {
 		Expect(*groupID).ToNot(BeEmpty())
 
 		clearData := helpers.RandomBytes(1024 * 1024 * 3)
-		encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptionOptions{ShareWithGroups: []string{*groupID}})
+		encryptionOptions := core.NewEncryptionOptions()
+		encryptionOptions.ShareWithGroups = []string{*groupID}
+		encrypted, err := aliceSession.Encrypt(clearData, &encryptionOptions)
 		Expect(err).ToNot(HaveOccurred())
 
 		decrypted, err := martineSession.Decrypt(encrypted)
@@ -55,7 +57,9 @@ var _ = Describe("functional", func() {
 		Expect(aliceSession.UpdateGroupMembers(*groupID, []string{martine.PublicIdentity, *bobPublicProvisional})).To(Succeed())
 
 		clearData := helpers.RandomBytes(1024 * 1024 * 3)
-		encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptionOptions{ShareWithGroups: []string{*groupID}})
+		encryptionOptions := core.NewEncryptionOptions()
+		encryptionOptions.ShareWithGroups = []string{*groupID}
+		encrypted, err := aliceSession.Encrypt(clearData, &encryptionOptions)
 		Expect(err).ToNot(HaveOccurred())
 
 		decrypted, err := martineSession.Decrypt(encrypted)

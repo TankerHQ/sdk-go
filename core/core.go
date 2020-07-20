@@ -31,6 +31,13 @@ type EncryptionOptions struct {
 	ShareWithSelf bool
 }
 
+// NewEncryptionOptions creates EncryptionOptions with default values
+func NewEncryptionOptions() EncryptionOptions {
+	return EncryptionOptions{
+		ShareWithSelf: true,
+	}
+}
+
 // SharingOptions contains user and group recipients to share with with @Share()
 type SharingOptions struct {
 	// ShareWithUsers is a list of the public identities to share with
