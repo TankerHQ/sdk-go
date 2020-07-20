@@ -37,7 +37,7 @@ func convertEncryptionOptions(options EncryptionOptions) *C.tanker_encrypt_optio
 	}
 }
 
-func convertSharingOptions(options EncryptionOptions) *C.tanker_sharing_options_t {
+func convertSharingOptions(options SharingOptions) *C.tanker_sharing_options_t {
 	return &C.tanker_sharing_options_t{
 		version:           1,
 		share_with_users:  toCArray(options.ShareWithUsers),
