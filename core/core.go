@@ -23,10 +23,27 @@ const (
 
 // EncryptionOptions contains user and group recipients to share with during an @Encrypt()
 type EncryptionOptions struct {
-	// Recipients is a list of the public identities of each recipient to share with
-	Recipients []string
-	// Groups is a list of group ids to share with
-	Groups []string
+	// ShareWithUsers is a list of the public identities to share with
+	ShareWithUsers []string
+	// ShareWithGroups is a list of group IDs to share with
+	ShareWithGroups []string
+	// ShareWithSelf must be true to allow the author to decrypt the resource
+	ShareWithSelf bool
+}
+
+// NewEncryptionOptions creates EncryptionOptions with default values
+func NewEncryptionOptions() EncryptionOptions {
+	return EncryptionOptions{
+		ShareWithSelf: true,
+	}
+}
+
+// SharingOptions contains user and group recipients to share with with @Share()
+type SharingOptions struct {
+	// ShareWithUsers is a list of the public identities to share with
+	ShareWithUsers []string
+	// ShareWithGroups is a list of group IDs to share with
+	ShareWithGroups []string
 }
 
 // unsafeANSIToString transforms a *C.char to a GoString. The *C.char is free'd.
@@ -211,8 +228,8 @@ func (t *Tanker) Encrypt(clearData []byte, options *EncryptionOptions) ([]byte, 
 	var coptions *C.tanker_encrypt_options_t = nil
 	if options != nil {
 		coptions = convertEncryptionOptions(*options)
-		defer freeCArray(coptions.share_with_users, len(options.Recipients))
-		defer freeCArray(coptions.share_with_groups, len(options.Groups))
+		defer freeCArray(coptions.share_with_users, len(options.ShareWithUsers))
+		defer freeCArray(coptions.share_with_groups, len(options.ShareWithGroups))
 	}
 	_, err := await(
 		C.tanker_encrypt(
@@ -273,17 +290,14 @@ func (t *Tanker) GetResourceId(encryptedData []byte) (*string, error) {
 // Share shares a list of resource to a list of recipients and/or groups
 // This function either fully succeeds or fails. In case of failure,
 // nothing is share with any recipient or group.
-func (t *Tanker) Share(resourceIDs []string, recipients []string, groups []string) error {
+func (t *Tanker) Share(resourceIDs []string, sharingOptions SharingOptions) error {
 	if len(resourceIDs) == 0 {
 		return fmt.Errorf("ResourceIDs must not be nil nor empty")
 	}
 	cresourceIds := toCArray(resourceIDs)
-	coptions := convertSharingOptions(EncryptionOptions{
-		recipients,
-		groups,
-	})
-	defer freeCArray(coptions.share_with_users, len(recipients))
-	defer freeCArray(coptions.share_with_groups, len(groups))
+	coptions := convertSharingOptions(sharingOptions)
+	defer freeCArray(coptions.share_with_users, len(sharingOptions.ShareWithUsers))
+	defer freeCArray(coptions.share_with_groups, len(sharingOptions.ShareWithGroups))
 	defer freeCArray(cresourceIds, len(resourceIDs))
 
 	_, err := await(
@@ -324,13 +338,15 @@ func (t *Tanker) RevokeDevice(deviceID string) (err error) {
 }
 
 // Create an encryption session that will allow doing multiple encryption operations with a reduced number of keys.
-func (t *Tanker) CreateEncryptionSession(recipients []string, groups []string) (*EncryptionSession, error) {
-	coptions := convertEncryptionOptions(EncryptionOptions{
-		recipients,
-		groups,
-	})
-	defer freeCArray(coptions.share_with_users, len(recipients))
-	defer freeCArray(coptions.share_with_groups, len(groups))
+func (t *Tanker) CreateEncryptionSession(encryptionOptions *EncryptionOptions) (*EncryptionSession, error) {
+	var coptions *C.tanker_encrypt_options_t = nil
+	if encryptionOptions != nil {
+		coptions = convertEncryptionOptions(*encryptionOptions)
+		defer freeCArray(coptions.share_with_users, len(encryptionOptions.ShareWithUsers))
+		defer freeCArray(coptions.share_with_groups, len(encryptionOptions.ShareWithGroups))
+	} else {
+		coptions = nil
+	}
 
 	csession, err := await(
 		C.tanker_encryption_session_open(

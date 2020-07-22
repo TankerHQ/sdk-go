@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/TankerHQ/identity-go/identity"
+	"github.com/TankerHQ/sdk-go/v2/core"
+	"github.com/TankerHQ/sdk-go/v2/helpers"
 )
 
 var _ = Describe("functional", func() {
@@ -23,6 +25,17 @@ var _ = Describe("functional", func() {
 		groupID, err := aliceSession.CreateGroup([]string{alice.PublicIdentity, *bobPublicProvisional, martine.PublicIdentity})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(*groupID).ToNot(BeEmpty())
+
+		clearData := helpers.RandomBytes(1024 * 1024 * 3)
+		encryptionOptions := core.NewEncryptionOptions()
+		encryptionOptions.ShareWithGroups = []string{*groupID}
+		encrypted, err := aliceSession.Encrypt(clearData, &encryptionOptions)
+		Expect(err).ToNot(HaveOccurred())
+
+		decrypted, err := martineSession.Decrypt(encrypted)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(decrypted).To(Equal(clearData))
+
 		Expect(martineSession.Destroy()).To(Succeed())
 		Expect(aliceSession.Destroy()).To(Succeed())
 	})
@@ -42,6 +55,17 @@ var _ = Describe("functional", func() {
 		bobPublicProvisional, err := identity.GetPublicIdentity(*bobProvisional)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(aliceSession.UpdateGroupMembers(*groupID, []string{martine.PublicIdentity, *bobPublicProvisional})).To(Succeed())
+
+		clearData := helpers.RandomBytes(1024 * 1024 * 3)
+		encryptionOptions := core.NewEncryptionOptions()
+		encryptionOptions.ShareWithGroups = []string{*groupID}
+		encrypted, err := aliceSession.Encrypt(clearData, &encryptionOptions)
+		Expect(err).ToNot(HaveOccurred())
+
+		decrypted, err := martineSession.Decrypt(encrypted)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(decrypted).To(Equal(clearData))
+
 		Expect(martineSession.Destroy()).To(Succeed())
 		Expect(aliceSession.Destroy()).To(Succeed())
 	})

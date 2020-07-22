@@ -155,9 +155,33 @@ var _ = Describe("functional", func() {
 			bobSession, _ := bobLaptop.Start()
 			defer bobSession.Stop() // nolint: errcheck
 			clearData := helpers.RandomBytes(1024 * 1024 * 3)
-			encrypted, err := aliceSession.Encrypt(clearData, &core.EncryptionOptions{Recipients: []string{bob.PublicIdentity}})
+			encryptionOptions := core.NewEncryptionOptions()
+			encryptionOptions.ShareWithUsers = []string{bob.PublicIdentity}
+			encrypted, err := aliceSession.Encrypt(clearData, &encryptionOptions)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(encrypted).ToNot(HaveLen(0))
+			decrypted, err := bobSession.Decrypt(encrypted)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(decrypted).To(Equal(clearData))
+		})
+
+		It("Encrypts and shares with bob but not self", func() {
+			bobSession, _ := bobLaptop.Start()
+			defer bobSession.Stop() // nolint: errcheck
+			clearData := helpers.RandomBytes(1024 * 1024 * 3)
+			encryptionOptions := core.NewEncryptionOptions()
+			encryptionOptions.ShareWithUsers = []string{bob.PublicIdentity}
+			encryptionOptions.ShareWithSelf = false
+			encrypted, err := aliceSession.Encrypt(clearData, &encryptionOptions)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(encrypted).ToNot(HaveLen(0))
+
+			_, err = aliceSession.Decrypt(encrypted)
+			Expect(err).To(HaveOccurred())
+			terror, ok := (err).(core.Error)
+			Expect(ok).To(BeTrue())
+			Expect(terror.Code()).To(Equal(core.ErrorInvalidArgument))
+
 			decrypted, err := bobSession.Decrypt(encrypted)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(decrypted).To(Equal(clearData))
@@ -190,7 +214,7 @@ var _ = Describe("functional", func() {
 			Expect(encrypted).ToNot(HaveLen(0))
 			resourceId, err := aliceSession.GetResourceId(encrypted)
 			Expect(err).ToNot(HaveOccurred())
-			err = aliceSession.Share([]string{*resourceId}, []string{bob.PublicIdentity}, nil)
+			err = aliceSession.Share([]string{*resourceId}, core.SharingOptions{ShareWithUsers: []string{bob.PublicIdentity}})
 			Expect(err).ToNot(HaveOccurred())
 			decrypted, err := bobSession.Decrypt(encrypted)
 			Expect(err).ToNot(HaveOccurred())
@@ -205,7 +229,9 @@ var _ = Describe("functional", func() {
 			bobPublicProvisional, err := identity.GetPublicIdentity(*bobProvisional)
 			Expect(err).ToNot(HaveOccurred())
 			// Trigger the creation of the provisional Identity on the Tanker Server
-			_, err = aliceSession.Encrypt(clearData, &core.EncryptionOptions{Recipients: []string{*bobPublicProvisional}})
+			encryptionOptions := core.NewEncryptionOptions()
+			encryptionOptions.ShareWithUsers = []string{*bobPublicProvisional}
+			_, err = aliceSession.Encrypt(clearData, &encryptionOptions)
 			Expect(err).ToNot(HaveOccurred())
 			bobSession, _ := bobLaptop.Start()
 			defer bobSession.Stop() // nolint: errCheck
