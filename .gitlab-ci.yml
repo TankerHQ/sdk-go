@@ -105,19 +105,6 @@ nightly/windows:
   tags:
     - windows
 
-# This is a temporary job, we try to reproduce a crash in sdk go
-# Core dumps are enabled on the farms, so hopefully we'll get a dump with native
-# compiled in debug mode.
-nightly/windows-debug:
-  extends: .nightly
-  script:
-    - $env:GOARCH=386
-    - $env:CGO_ENABLED=1
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile mingw32-release --native-debug
-    - poetry run python run-ci.py --isolate-conan-user-home build-and-test
-  tags:
-    - windows
-
 mirror:
   tags:
     - linux
