@@ -46,6 +46,11 @@ type SharingOptions struct {
 	ShareWithGroups []string
 }
 
+// NewSharingOptions creates SharingOptions with default values
+func NewSharingOptions() SharingOptions {
+    return SharingOptions{}
+}
+
 // unsafeANSIToString transforms a *C.char to a GoString. The *C.char is free'd.
 func unsafeANSIToString(pointer unsafe.Pointer) string {
 	charP := (*C.char)(unsafe.Pointer(pointer))
