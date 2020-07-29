@@ -5,9 +5,9 @@ import json
 
 from path import Path
 
-import ci
-import ci.conan
-import ci.cpp
+import tankerci
+import tankerci.conan
+import tankerci.cpp
 import cli_ui as ui
 
 PROFILE_OS_ARCHS = {
@@ -26,14 +26,16 @@ def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -
     if use_tanker == "deployed":
         conanfile = cwd / "conanfile-deployed.txt"
     elif use_tanker == "local":
-        ci.conan.export(
+        tankerci.conan.export(
             src_path=Path.getcwd().parent / "sdk-native", ref_or_channel="tanker/dev"
         )
     elif use_tanker == "same-as-branch":
-        workspace = ci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
-        ci.conan.export(src_path=workspace / "sdk-native", ref_or_channel="tanker/dev")
+        workspace = tankerci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
+        tankerci.conan.export(
+            src_path=workspace / "sdk-native", ref_or_channel="tanker/dev"
+        )
     # fmt: off
-    ci.conan.run(
+    tankerci.conan.run(
         "install", conanfile,
         "--update",
         "--profile", profile,
@@ -86,29 +88,31 @@ def build_and_check() -> None:
     # -v shows the logs as they appear, even if tests wlll succeed
     # -ginkgo.v shows the name of each test as it starts
     # -count=1 forces the tests to run instead of showing a cached result
-    ci.run("go", "test", "./...", "-v", "-ginkgo.v", "-count=1")
+    tankerci.run("go", "test", "./...", "-v", "-ginkgo.v", "-count=1")
 
 
 def make_bump_commit(version: str):
-    ci.bump.bump_files(version)
+    tankerci.bump.bump_files(version)
     cwd = Path.getcwd()
-    ci.git.run(cwd, "add", "--update")
+    tankerci.git.run(cwd, "add", "--update")
     cgo_sources = (cwd / "core").files("cgo_*.go")
     for cgo_source in cgo_sources:
-        ci.git.run(cwd, "add", "--force", cgo_source)
+        tankerci.git.run(cwd, "add", "--force", cgo_source)
     ctanker_files = (cwd / "core/ctanker").walkfiles()
     for ctanker_file in ctanker_files:
-        ci.git.run(cwd, "add", "--force", ctanker_file)
-    ci.git.run(cwd, "commit", "--message", f"add binary files for version v{version}")
+        tankerci.git.run(cwd, "add", "--force", ctanker_file)
+    tankerci.git.run(
+        cwd, "commit", "--message", f"add binary files for version v{version}"
+    )
 
 
 def deploy(*, version: str) -> None:
     cwd = Path.getcwd()
     tag = "v" + version
     make_bump_commit(version)
-    ci.git.run(cwd, "tag", tag)
+    tankerci.git.run(cwd, "tag", tag)
     github_url = "git@github.com:TankerHQ/sdk-go"
-    ci.git.run(cwd, "push", github_url, f"{tag}:{tag}")
+    tankerci.git.run(cwd, "push", github_url, f"{tag}:{tag}")
 
 
 def main() -> None:
@@ -136,8 +140,8 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.home_isolation:
-        ci.conan.set_home_isolation()
-        ci.conan.update_config()
+        tankerci.conan.set_home_isolation()
+        tankerci.conan.update_config()
 
     if args.command == "install-deps":
         install_deps(args.profile, args.use_tanker)
@@ -146,7 +150,7 @@ def main() -> None:
     elif args.command == "deploy":
         deploy(version=args.version)
     elif args.command == "mirror":
-        ci.git.mirror(github_url="git@github.com:TankerHQ/sdk-go")
+        tankerci.git.mirror(github_url="git@github.com:TankerHQ/sdk-go")
     else:
         parser.print_help()
         sys.exit(1)
