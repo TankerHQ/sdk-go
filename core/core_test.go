@@ -214,7 +214,9 @@ var _ = Describe("functional", func() {
 			Expect(encrypted).ToNot(HaveLen(0))
 			resourceId, err := aliceSession.GetResourceId(encrypted)
 			Expect(err).ToNot(HaveOccurred())
-			err = aliceSession.Share([]string{*resourceId}, core.SharingOptions{ShareWithUsers: []string{bob.PublicIdentity}})
+			sharingOptions := core.NewSharingOptions()
+			sharingOptions.ShareWithUsers = []string{bob.PublicIdentity}
+			err = aliceSession.Share([]string{*resourceId}, sharingOptions)
 			Expect(err).ToNot(HaveOccurred())
 			decrypted, err := bobSession.Decrypt(encrypted)
 			Expect(err).ToNot(HaveOccurred())
