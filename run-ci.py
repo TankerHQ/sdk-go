@@ -4,6 +4,7 @@ import sys
 import json
 
 from path import Path
+from enum import Enum
 
 import tankerci
 import tankerci.conan
@@ -18,18 +19,28 @@ PROFILE_OS_ARCHS = {
 }
 
 
-def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -> None:
+class TankerSource(Enum):
+    LOCAL = "local"
+    SAME_AS_BRANCH = "same-as-branch"
+    DEPLOYED = "deployed"
+
+
+def install_tanker_native(
+    profile: str, install_folder: Path, tanker_source: TankerSource
+) -> None:
     cwd = Path.getcwd()
     conanfile = cwd / "conanfile-local.txt"
+    conan_extra_flags = ["--build=tanker"]
 
     install_args = []
-    if use_tanker == "deployed":
+    if tanker_source == TankerSource.DEPLOYED:
         conanfile = cwd / "conanfile-deployed.txt"
-    elif use_tanker == "local":
+        conan_extra_flags = []
+    if tanker_source == TankerSource.LOCAL:
         tankerci.conan.export(
             src_path=Path.getcwd().parent / "sdk-native", ref_or_channel="tanker/dev"
         )
-    elif use_tanker == "same-as-branch":
+    elif tanker_source == TankerSource.SAME_AS_BRANCH:
         workspace = tankerci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
         tankerci.conan.export(
             src_path=workspace / "sdk-native", ref_or_channel="tanker/dev"
@@ -37,6 +48,7 @@ def install_tanker_native(profile: str, install_folder: Path, use_tanker: str) -
     # fmt: off
     tankerci.conan.run(
         "install", conanfile,
+        *conan_extra_flags,
         "--update",
         "--profile", profile,
         "--install-folder", install_folder,
@@ -74,13 +86,13 @@ def generate_cgo_file(install_path: Path, go_os: str, go_arch: str) -> None:
         f.write(content)
 
 
-def install_deps(profile: str, use_tanker: str) -> None:
+def install_deps(profile: str, tanker_source: TankerSource) -> None:
     profile_prefix = profile.split("-")[0]
     go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
     deps_install_path = Path.getcwd() / "core/ctanker" / f"{go_os}-{go_arch}"
     deps_install_path.rmtree_p()
 
-    install_tanker_native(profile, deps_install_path, use_tanker)
+    install_tanker_native(profile, deps_install_path, tanker_source)
     generate_cgo_file(deps_install_path, go_os, go_arch)
 
 
@@ -127,7 +139,10 @@ def main() -> None:
 
     install_deps_parser = subparsers.add_parser("install-deps")
     install_deps_parser.add_argument(
-        "--use-tanker", choices=["deployed", "local", "same-as-branch"], default="local"
+        "--use-tanker",
+        type=TankerSource,
+        default=TankerSource.LOCAL,
+        dest="tanker_source",
     )
     install_deps_parser.add_argument("--profile", required=True)
 
@@ -144,7 +159,7 @@ def main() -> None:
         tankerci.conan.update_config()
 
     if args.command == "install-deps":
-        install_deps(args.profile, args.use_tanker)
+        install_deps(args.profile, args.tanker_source)
     elif args.command == "build-and-test":
         build_and_check()
     elif args.command == "deploy":
