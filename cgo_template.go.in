@@ -1,7 +1,7 @@
 package core
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/ctanker/{{GO_OS}}-{{GO_ARCH}}/include
-#cgo LDFLAGS: -L${SRCDIR}/ctanker/{{GO_OS}}-{{GO_ARCH}}/lib {{CONAN_LIBS}}
+#cgo CFLAGS: {{INCLUDEDIRS}}
+#cgo LDFLAGS: {{LIBDIRS}} {{LIBS}}
 */
 import "C"

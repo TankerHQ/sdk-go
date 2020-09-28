@@ -1,12 +1,13 @@
 import argparse
-import os
 import sys
 import json
 
+from typing import Any, List, Dict
+
 from path import Path
-from enum import Enum
 
 import tankerci
+from tankerci.conan import TankerSource
 import tankerci.conan
 import tankerci.cpp
 import cli_ui as ui
@@ -19,59 +20,27 @@ PROFILE_OS_ARCHS = {
 }
 
 
-class TankerSource(Enum):
-    LOCAL = "local"
-    SAME_AS_BRANCH = "same-as-branch"
-    DEPLOYED = "deployed"
-
-
-def install_tanker_native(
-    profile: str, install_folder: Path, tanker_source: TankerSource
-) -> None:
-    cwd = Path.getcwd()
-    conanfile = cwd / "conanfile-local.txt"
-    conan_extra_flags = ["--build=tanker"]
-
-    install_args = []
-    if tanker_source == TankerSource.DEPLOYED:
-        conanfile = cwd / "conanfile-deployed.txt"
-        conan_extra_flags = []
-    if tanker_source == TankerSource.LOCAL:
-        tankerci.conan.export(
-            src_path=Path.getcwd().parent / "sdk-native", ref_or_channel="tanker/dev"
-        )
-    elif tanker_source == TankerSource.SAME_AS_BRANCH:
-        workspace = tankerci.git.prepare_sources(repos=["sdk-native", "sdk-go"])
-        tankerci.conan.export(
-            src_path=workspace / "sdk-native", ref_or_channel="tanker/dev"
-        )
-    # fmt: off
-    tankerci.conan.run(
-        "install", conanfile,
-        *conan_extra_flags,
-        "--update",
-        "--profile", profile,
-        "--install-folder", install_folder,
-        "--generator", "json",
-        *install_args,
-    )
-    # fmt: on
-
-
-def get_deps_link_flags(install_path: Path) -> str:
+def get_deps_infos(install_path: Path) -> Any:
+    libs = []
+    libdirs = []
+    includedirs = []
     json_file = install_path / "conanbuildinfo.json"
     conan_info = json.loads(json_file.text())
-    deps = []
     for dep in conan_info["dependencies"]:
-        deps += dep["libs"]
-        deps += dep["system_libs"]
-    return " ".join([f"-l{d}" for d in deps])
+        libs += dep["libs"]
+        libs += dep["system_libs"]
+        if len(dep["lib_paths"]):
+            libdirs += dep["lib_paths"]
+        if dep["name"] == "tanker" and len(dep["include_paths"]):
+            includedirs += dep["include_paths"]
+
+    return {"libs": libs, "libdirs": libdirs, "includedirs": includedirs}
 
 
-def generate_cgo_file(install_path: Path, go_os: str, go_arch: str) -> None:
-    link_flags = get_deps_link_flags(install_path)
+def generate_cgo_file(deps_infos: Any, go_os: str, go_arch: str) -> None:
+    libs = " ".join([f"-l{lib}" for lib in deps_infos["libs"]])
     if go_os in ("linux", "windows"):
-        link_flags += " -static-libstdc++ -static-libgcc"
+        libs += " -static-libstdc++ -static-libgcc"
     template_file = Path.getcwd() / "cgo_template.go.in"
     # having go_os and go_arch in the filename acts as an implicit build rule
     # e.g. only build cgo_linux_amd64.go on Linux amd64
@@ -79,21 +48,75 @@ def generate_cgo_file(install_path: Path, go_os: str, go_arch: str) -> None:
     ui.info_1(f"Generating {dst_file}")
     template_file.copy(dst_file)
     content = dst_file.text()
-    content = content.replace("{{GO_OS}}", go_os)
-    content = content.replace("{{GO_ARCH}}", go_arch)
-    content = content.replace("{{CONAN_LIBS}}", link_flags)
+    content = content.replace(
+        "{{INCLUDEDIRS}}", " ".join([f"-I{dir}" for dir in deps_infos["includedirs"]])
+    )
+    content = content.replace(
+        "{{LIBDIRS}}", " ".join([f"-L{dir}" for dir in deps_infos["libdirs"]])
+    )
+    content = content.replace("{{LIBS}}", libs)
     with open(dst_file, mode="w") as f:
         f.write(content)
 
 
-def install_deps(profile: str, tanker_source: TankerSource) -> None:
+def platform_libnames(name: str) -> str:
+    if sys.platform == "win32":
+        yield f"{name}.lib"
+        yield f"{name}.dll"
+    elif sys.platform == "linux":
+        yield f"lib{name}.a"
+        yield f"lib{name}.so"
+    elif sys.platform == "darwin":
+        yield f"lib{name}.a"
+        yield f"lib{name}.dylib"
+
+
+def find_libs(names: List[str], lib_paths: List[str]) -> Path:
+    for name in names:
+        for lib_path in lib_paths:
+            for lib in platform_libnames(name):
+                candidate = Path(lib_path) / lib
+                if candidate.exists():
+                    yield candidate
+
+
+def find_all_dep_libs(libs: List[str], lib_paths: List[str]) -> Path:
+    for lib_path in find_libs(libs, lib_paths):
+        yield lib_path
+
+
+def copy_deps(deps_infos: Any, dest_path: Path) -> None:
+    dest_path.rmtree_p()
+    ui.info_1(f"creating {dest_path}")
+    dest_path.mkdir_p()
+    dest_lib_path = dest_path / "lib"
+    dest_lib_path.mkdir_p()
+    dest_include_path = dest_path / "include"
+    dest_include_path.mkdir_p()
+    for source_lib in find_all_dep_libs(deps_infos["libs"], deps_infos["libdirs"]):
+        ui.info_1(f"copying {source_lib} -> {dest_lib_path}")
+        source_lib.copy2(dest_lib_path)
+    for include_dir in deps_infos["includedirs"]:
+        ui.info_1(f"copying {include_dir} -> {dest_include_path}")
+        Path(include_dir).merge_tree(dest_include_path)
+
+
+def prepare(profile: str, tanker_source: TankerSource, update: bool) -> None:
     profile_prefix = profile.split("-")[0]
     go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
-    deps_install_path = Path.getcwd() / "core/ctanker" / f"{go_os}-{go_arch}"
-    deps_install_path.rmtree_p()
+    conan_out = Path.getcwd() / "conan"
 
-    install_tanker_native(profile, deps_install_path, tanker_source)
-    generate_cgo_file(deps_install_path, go_os, go_arch)
+    tankerci.conan.install_tanker_source(
+        tanker_source, output_path=conan_out, profiles=[profile], update=update
+    )
+    conan_path = conan_out.dirs()[0]
+    deps_infos = get_deps_infos(conan_path)
+    install_path = Path.getcwd() / "core" / "ctanker" / f"{go_os}-{go_arch}"
+    if tanker_source == TankerSource.DEPLOYED:
+        copy_deps(deps_infos, install_path)
+        deps_infos["libdirs"] = [install_path / "lib"]
+        deps_infos["includedirs"] = [install_path / "include"]
+    generate_cgo_file(deps_infos, go_os, go_arch)
 
 
 def build_and_check() -> None:
@@ -137,14 +160,17 @@ def main() -> None:
     )
     subparsers = parser.add_subparsers(title="subcommands", dest="command")
 
-    install_deps_parser = subparsers.add_parser("install-deps")
-    install_deps_parser.add_argument(
+    prepare_parser = subparsers.add_parser("prepare")
+    prepare_parser.add_argument(
         "--use-tanker",
         type=TankerSource,
-        default=TankerSource.LOCAL,
+        default=TankerSource.EDITABLE,
         dest="tanker_source",
     )
-    install_deps_parser.add_argument("--profile", required=True)
+    prepare_parser.add_argument("--profile", required=True)
+    prepare_parser.add_argument(
+        "--update", action="store_true", default=False, dest="update"
+    )
 
     subparsers.add_parser("build-and-test")
 
@@ -158,8 +184,8 @@ def main() -> None:
         tankerci.conan.set_home_isolation()
         tankerci.conan.update_config()
 
-    if args.command == "install-deps":
-        install_deps(args.profile, args.tanker_source)
+    if args.command == "prepare":
+        prepare(args.profile, args.tanker_source, args.update)
     elif args.command == "build-and-test":
         build_and_check()
     elif args.command == "deploy":
