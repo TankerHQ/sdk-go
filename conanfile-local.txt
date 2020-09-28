@@ -1,6 +1,0 @@
-[requires]
-tanker/dev@tanker/dev
-
-[imports]
-lib, *.a -> lib
-include, *ctanker* -> include

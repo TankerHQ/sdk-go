@@ -88,11 +88,11 @@ def find_all_dep_libs(libs: List[str], lib_paths: List[str]) -> Path:
 def copy_deps(deps_infos: Any, dest_path: Path) -> None:
     dest_path.rmtree_p()
     ui.info_1(f"creating {dest_path}")
-    dest_path.mkdir_p()
+    dest_path.makedirs_p()
     dest_lib_path = dest_path / "lib"
-    dest_lib_path.mkdir_p()
+    dest_lib_path.makedirs_p()
     dest_include_path = dest_path / "include"
-    dest_include_path.mkdir_p()
+    dest_include_path.makedirs_p()
     for source_lib in find_all_dep_libs(deps_infos["libs"], deps_infos["libdirs"]):
         ui.info_1(f"copying {source_lib} -> {dest_lib_path}")
         source_lib.copy2(dest_lib_path)
@@ -115,11 +115,17 @@ def prepare(profile: str, tanker_source: TankerSource, update: bool) -> None:
     if tanker_source == TankerSource.DEPLOYED:
         copy_deps(deps_infos, install_path)
         deps_infos["libdirs"] = [install_path / "lib"]
-        deps_infos["includedirs"] = [install_path / "include"]
+        include_path = install_path / "include"
+        deps_infos["includedirs"] = [include_path]
+        ui.info_1(f"cleaning {include_path}")
+        with include_path:
+            Path("Tanker").rmtree_p()
+            Path("Helpers").rmtree_p()
     generate_cgo_file(deps_infos, go_os, go_arch)
 
 
-def build_and_check() -> None:
+def build_and_test(profile: str, tanker_source: TankerSource) -> None:
+    prepare(profile, tanker_source, False)
     # -v shows the logs as they appear, even if tests wlll succeed
     # -ginkgo.v shows the name of each test as it starts
     # -count=1 forces the tests to run instead of showing a cached result
@@ -172,7 +178,14 @@ def main() -> None:
         "--update", action="store_true", default=False, dest="update"
     )
 
-    subparsers.add_parser("build-and-test")
+    build_parser = subparsers.add_parser("build-and-test")
+    build_parser.add_argument(
+        "--use-tanker",
+        type=TankerSource,
+        default=TankerSource.EDITABLE,
+        dest="tanker_source",
+    )
+    build_parser.add_argument("--profile", default="default", required=True)
 
     subparsers.add_parser("mirror")
 
@@ -187,7 +200,7 @@ def main() -> None:
     if args.command == "prepare":
         prepare(args.profile, args.tanker_source, args.update)
     elif args.command == "build-and-test":
-        build_and_check()
+        build_and_test(args.profile, args.tanker_source)
     elif args.command == "deploy":
         deploy(version=args.version)
     elif args.command == "mirror":

@@ -1,6 +1,0 @@
-[requires]
-tanker/2.5.0@tanker/stable
-
-[imports]
-lib, *.a -> lib
-include, *ctanker* -> include

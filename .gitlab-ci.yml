@@ -13,24 +13,13 @@ check/linux:
   extends: .check
   tags: [linux]
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile gcc8-release
-    - poetry run python run-ci.py build-and-test
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=same-as-branch --profile gcc8-release
 
 check/macos:
   extends: .check
   tags: [macos]
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile macos-release
-    - poetry run python run-ci.py build-and-test
-
-.check/windows:
-  extends: .check
-  tags: [windows]
-  script:
-    - $env:GOARCH=386
-    - $env:CGO_ENABLED=1
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile mingw32-release
-    - poetry run python run-ci.py --isolate-conan-user-home build-and-test
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=same-as-branch --profile macos-release
 
 .check-deployed:
   stage: check
@@ -40,8 +29,7 @@ check/deployed-linux:
   extends: .check-deployed
   tags: [linux]
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=deployed --profile gcc8-release
-    - poetry run python run-ci.py build-and-test
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=deployed --profile gcc8-release
   artifacts:
     paths:
       - core/cgo_linux_amd64.go
@@ -52,27 +40,12 @@ check/deployed-macos:
   extends: .check-deployed
   tags: [macos]
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=deployed --profile macos-release
-    - poetry run python run-ci.py build-and-test
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=deployed --profile macos-release
   artifacts:
     paths:
       - core/cgo_darwin_amd64.go
       - core/ctanker/darwin-amd64/include
       - core/ctanker/darwin-amd64/lib
-
-.check/deployed-windows:
-  extends: .check-deployed
-  tags: [windows]
-  script:
-    - $env:GOARCH=386
-    - $env:CGO_ENABLED=1
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=deployed --profile mingw32-release
-    - poetry run python run-ci.py build-and-test
-  artifacts:
-    paths:
-      - core/cgo_windows_386.go
-      - core/ctanker/windows-386/include
-      - core/ctanker/windows-386/lib
 
 .nightly:
   stage: check
@@ -82,28 +55,16 @@ check/deployed-macos:
 nightly/linux:
   extends: .nightly
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile gcc8-release
-    - poetry run python run-ci.py build-and-test
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=same-as-branch --profile gcc8-release
   tags:
     - linux
 
 nightly/macos:
   extends: .nightly
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile macos-release
-    - poetry run python run-ci.py build-and-test
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=same-as-branch --profile macos-release
   tags:
     - macos
-
-.nightly/windows:
-  extends: .nightly
-  script:
-    - $env:GOARCH=386
-    - $env:CGO_ENABLED=1
-    - poetry run python run-ci.py --isolate-conan-user-home install-deps --use-tanker=same-as-branch --profile mingw32-release
-    - poetry run python run-ci.py --isolate-conan-user-home build-and-test
-  tags:
-    - windows
 
 mirror:
   tags:
