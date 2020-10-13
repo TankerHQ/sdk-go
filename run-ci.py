@@ -1,8 +1,6 @@
 import argparse
 import sys
-import json
-
-from typing import Any, List
+from typing import List, Optional
 
 from path import Path
 
@@ -65,13 +63,24 @@ def copy_deps(deps_info: DepsConfig, dest_path: Path) -> None:
     return lib_paths
 
 
-def prepare(profile: str, tanker_source: TankerSource, update: bool) -> None:
+def prepare(
+    profile: str,
+    tanker_source: TankerSource,
+    update: bool,
+    tanker_ref: Optional[str] = None,
+) -> None:
     profile_prefix = profile.split("-")[0]
     go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
     conan_out = Path.getcwd() / "conan"
+    if tanker_source == TankerSource.DEPLOYED and not tanker_ref:
+        tanker_ref = "tanker/latest-stable@"
 
     tankerci.conan.install_tanker_source(
-        tanker_source, output_path=conan_out, profiles=[profile], update=update
+        tanker_source,
+        output_path=conan_out,
+        profiles=[profile],
+        update=update,
+        tanker_deployed_ref=tanker_ref,
     )
     conan_path = conan_out.dirs()[0]
     deps_info = DepsConfig(conan_path)
@@ -101,8 +110,10 @@ def prepare(profile: str, tanker_source: TankerSource, update: bool) -> None:
         )
 
 
-def build_and_test(profile: str, tanker_source: TankerSource) -> None:
-    prepare(profile, tanker_source, False)
+def build_and_test(
+    profile: str, tanker_source: TankerSource, tanker_ref: Optional[str] = None
+) -> None:
+    prepare(profile, tanker_source, False, tanker_ref)
     # -v shows the logs as they appear, even if tests wlll succeed
     # -ginkgo.v shows the name of each test as it starts
     # -count=1 forces the tests to run instead of showing a cached result
@@ -150,6 +161,7 @@ def main() -> None:
         default=TankerSource.EDITABLE,
         dest="tanker_source",
     )
+    prepare_parser.add_argument("--tanker-ref")
     prepare_parser.add_argument("--profile", required=True)
     prepare_parser.add_argument(
         "--update", action="store_true", default=False, dest="update"
@@ -163,6 +175,7 @@ def main() -> None:
         dest="tanker_source",
     )
     build_parser.add_argument("--profile", default="default", required=True)
+    build_parser.add_argument("--tanker-ref")
 
     subparsers.add_parser("mirror")
 
@@ -175,9 +188,11 @@ def main() -> None:
         tankerci.conan.update_config()
 
     if args.command == "prepare":
-        prepare(args.profile, args.tanker_source, args.update)
+        prepare(
+            args.profile, args.tanker_source, args.update, tanker_ref=args.tanker_ref
+        )
     elif args.command == "build-and-test":
-        build_and_test(args.profile, args.tanker_source)
+        build_and_test(args.profile, args.tanker_source, tanker_ref=args.tanker_ref)
     elif args.command == "deploy":
         deploy(version=args.version)
     elif args.command == "mirror":
