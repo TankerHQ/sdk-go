@@ -21,13 +21,13 @@ PROFILE_OS_ARCHS = {
 
 def generate_cgo_file(
     installed_lib_paths: List[Path],
-    system_libs: List[str],
+    lib_names: List[str],
     installed_include_paths: List[Path],
     go_os: str,
     go_arch: str,
 ) -> None:
     libs = installed_lib_paths
-    libs.extend([f"-l{lib}" for lib in system_libs])
+    libs.extend([f"-l{lib}" for lib in lib_names])
     if go_os in ("linux", "windows"):
         libs.extend(["-static-libstdc++", "-static-libgcc"])
     template_file = Path.getcwd() / "cgo_template.go.in"
@@ -53,14 +53,12 @@ def copy_deps(deps_info: DepsConfig, dest_path: Path) -> None:
     dest_lib_path.makedirs_p()
     dest_include_path = dest_path / "include"
     dest_include_path.makedirs_p()
-    lib_paths: List[Path] = []
     for include_dir in deps_info["tanker"].include_dirs:
         ui.info_1(f"copying {include_dir} -> {dest_include_path}")
         Path(include_dir).merge_tree(dest_include_path)
     for source_lib in deps_info.all_lib_paths():
         ui.info_1(f"copying {source_lib} -> {dest_lib_path}")
-        lib_paths.append(source_lib.copy2(dest_lib_path))
-    return lib_paths
+        source_lib.copy2(dest_lib_path)
 
 
 def prepare(
@@ -84,25 +82,26 @@ def prepare(
     )
     conan_path = conan_out.dirs()[0]
     deps_info = DepsConfig(conan_path)
-    install_path = Path.getcwd() / "core" / "ctanker" / f"{go_os}-{go_arch}"
+    go_install = Path("ctanker") / f"{go_os}-{go_arch}"
+    install_path = Path.getcwd() / "core" / go_install
+
     if tanker_source == TankerSource.DEPLOYED:
-        installed_lib_paths = copy_deps(deps_info, install_path)
+        copy_deps(deps_info, install_path)
         installed_include_path = install_path / "include"
         ui.info_1(f"cleaning {installed_include_path}")
         with installed_include_path:
             Path("Tanker").rmtree_p()
             Path("Helpers").rmtree_p()
         generate_cgo_file(
-            installed_lib_paths,
-            deps_info.all_system_libs(),
-            [installed_include_path],
+            [Path("-L${SRCDIR}") / go_install / "lib"],
+            deps_info.all_libs(),
+            [go_install / "include"],
             go_os,
             go_arch,
         )
     else:
-        print(deps_info["tanker"].include_dirs)
         generate_cgo_file(
-            deps_info.all_lib_paths(),
+            list(deps_info.all_lib_paths()),
             deps_info.all_system_libs(),
             deps_info["tanker"].include_dirs,
             go_os,
