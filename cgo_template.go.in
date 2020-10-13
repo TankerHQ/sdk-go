@@ -2,6 +2,6 @@ package core
 
 /*
 #cgo CFLAGS: {{INCLUDEDIRS}}
-#cgo LDFLAGS: {{LIBDIRS}} {{LIBS}}
+#cgo LDFLAGS: {{LIBS}}
 */
 import "C"

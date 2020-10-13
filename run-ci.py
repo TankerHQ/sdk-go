@@ -2,12 +2,13 @@ import argparse
 import sys
 import json
 
-from typing import Any, List, Dict
+from typing import Any, List
 
 from path import Path
 
 import tankerci
 from tankerci.conan import TankerSource
+from tankerci.build_info import DepsConfig
 import tankerci.conan
 import tankerci.cpp
 import cli_ui as ui
@@ -20,27 +21,17 @@ PROFILE_OS_ARCHS = {
 }
 
 
-def get_deps_infos(install_path: Path) -> Any:
-    libs = []
-    libdirs = []
-    includedirs = []
-    json_file = install_path / "conanbuildinfo.json"
-    conan_info = json.loads(json_file.text())
-    for dep in conan_info["dependencies"]:
-        libs += dep["libs"]
-        libs += dep["system_libs"]
-        if len(dep["lib_paths"]):
-            libdirs += dep["lib_paths"]
-        if dep["name"] == "tanker" and len(dep["include_paths"]):
-            includedirs += dep["include_paths"]
-
-    return {"libs": libs, "libdirs": libdirs, "includedirs": includedirs}
-
-
-def generate_cgo_file(deps_infos: Any, go_os: str, go_arch: str) -> None:
-    libs = " ".join([f"-l{lib}" for lib in deps_infos["libs"]])
+def generate_cgo_file(
+    installed_lib_paths: List[Path],
+    system_libs: List[str],
+    installed_include_paths: List[Path],
+    go_os: str,
+    go_arch: str,
+) -> None:
+    libs = installed_lib_paths
+    libs.extend([f"-l{lib}" for lib in system_libs])
     if go_os in ("linux", "windows"):
-        libs += " -static-libstdc++ -static-libgcc"
+        libs.extend(["-static-libstdc++", "-static-libgcc"])
     template_file = Path.getcwd() / "cgo_template.go.in"
     # having go_os and go_arch in the filename acts as an implicit build rule
     # e.g. only build cgo_linux_amd64.go on Linux amd64
@@ -49,43 +40,14 @@ def generate_cgo_file(deps_infos: Any, go_os: str, go_arch: str) -> None:
     template_file.copy(dst_file)
     content = dst_file.text()
     content = content.replace(
-        "{{INCLUDEDIRS}}", " ".join([f"-I{dir}" for dir in deps_infos["includedirs"]])
+        "{{INCLUDEDIRS}}", " ".join([f"-I{dir}" for dir in installed_include_paths]),
     )
-    content = content.replace(
-        "{{LIBDIRS}}", " ".join([f"-L{dir}" for dir in deps_infos["libdirs"]])
-    )
-    content = content.replace("{{LIBS}}", libs)
+    content = content.replace("{{LIBS}}", " ".join(libs))
     with open(dst_file, mode="w") as f:
         f.write(content)
 
 
-def platform_libnames(name: str) -> str:
-    if sys.platform == "win32":
-        yield f"{name}.lib"
-        yield f"{name}.dll"
-    elif sys.platform == "linux":
-        yield f"lib{name}.a"
-        yield f"lib{name}.so"
-    elif sys.platform == "darwin":
-        yield f"lib{name}.a"
-        yield f"lib{name}.dylib"
-
-
-def find_libs(names: List[str], lib_paths: List[str]) -> Path:
-    for name in names:
-        for lib_path in lib_paths:
-            for lib in platform_libnames(name):
-                candidate = Path(lib_path) / lib
-                if candidate.exists():
-                    yield candidate
-
-
-def find_all_dep_libs(libs: List[str], lib_paths: List[str]) -> Path:
-    for lib_path in find_libs(libs, lib_paths):
-        yield lib_path
-
-
-def copy_deps(deps_infos: Any, dest_path: Path) -> None:
+def copy_deps(deps_info: DepsConfig, dest_path: Path) -> None:
     dest_path.rmtree_p()
     ui.info_1(f"creating {dest_path}")
     dest_path.makedirs_p()
@@ -93,12 +55,14 @@ def copy_deps(deps_infos: Any, dest_path: Path) -> None:
     dest_lib_path.makedirs_p()
     dest_include_path = dest_path / "include"
     dest_include_path.makedirs_p()
-    for source_lib in find_all_dep_libs(deps_infos["libs"], deps_infos["libdirs"]):
-        ui.info_1(f"copying {source_lib} -> {dest_lib_path}")
-        source_lib.copy2(dest_lib_path)
-    for include_dir in deps_infos["includedirs"]:
+    lib_paths: List[Path] = []
+    for include_dir in deps_info["tanker"].include_dirs:
         ui.info_1(f"copying {include_dir} -> {dest_include_path}")
         Path(include_dir).merge_tree(dest_include_path)
+    for source_lib in deps_info.all_lib_paths():
+        ui.info_1(f"copying {source_lib} -> {dest_lib_path}")
+        lib_paths.append(source_lib.copy2(dest_lib_path))
+    return lib_paths
 
 
 def prepare(profile: str, tanker_source: TankerSource, update: bool) -> None:
@@ -110,18 +74,31 @@ def prepare(profile: str, tanker_source: TankerSource, update: bool) -> None:
         tanker_source, output_path=conan_out, profiles=[profile], update=update
     )
     conan_path = conan_out.dirs()[0]
-    deps_infos = get_deps_infos(conan_path)
+    deps_info = DepsConfig(conan_path)
     install_path = Path.getcwd() / "core" / "ctanker" / f"{go_os}-{go_arch}"
     if tanker_source == TankerSource.DEPLOYED:
-        copy_deps(deps_infos, install_path)
-        deps_infos["libdirs"] = [install_path / "lib"]
-        include_path = install_path / "include"
-        deps_infos["includedirs"] = [include_path]
-        ui.info_1(f"cleaning {include_path}")
-        with include_path:
+        installed_lib_paths = copy_deps(deps_info, install_path)
+        installed_include_path = install_path / "include"
+        ui.info_1(f"cleaning {installed_include_path}")
+        with installed_include_path:
             Path("Tanker").rmtree_p()
             Path("Helpers").rmtree_p()
-    generate_cgo_file(deps_infos, go_os, go_arch)
+        generate_cgo_file(
+            installed_lib_paths,
+            deps_info.all_system_libs(),
+            [installed_include_path],
+            go_os,
+            go_arch,
+        )
+    else:
+        print(deps_info["tanker"].include_dirs)
+        generate_cgo_file(
+            deps_info.all_lib_paths(),
+            deps_info.all_system_libs(),
+            deps_info["tanker"].include_dirs,
+            go_os,
+            go_arch,
+        )
 
 
 def build_and_test(profile: str, tanker_source: TankerSource) -> None:
