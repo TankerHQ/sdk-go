@@ -29,7 +29,7 @@ check/deployed-linux:
   extends: .check-deployed
   tags: [linux]
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=deployed --profile gcc8-release
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=deployed --tanker-ref=$SDK_NATIVE_LATEST_CONAN_REFERENCE --profile gcc8-release
   artifacts:
     paths:
       - core/cgo_linux_amd64.go
@@ -40,7 +40,7 @@ check/deployed-macos:
   extends: .check-deployed
   tags: [macos]
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=deployed --profile macos-release
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --use-tanker=deployed --tanker-ref=$SDK_NATIVE_LATEST_CONAN_REFERENCE --profile macos-release
   artifacts:
     paths:
       - core/cgo_darwin_amd64.go
