@@ -21,6 +21,7 @@ const (
 	ErrorDeviceRevoked
 
 	ErrorConflict
+	ErrorUpgradeRequired
 )
 
 // Error is the Tanker error interface. Cast the error returned by
