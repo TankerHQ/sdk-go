@@ -44,7 +44,6 @@ def generate_cgo_file(
     content = content.replace("{{LIBS}}", " ".join(libs))
     with open(dst_file, mode="w") as f:
         f.write(content)
-    ui.info_2("Generated", dst_file)
 
 
 def copy_deps(deps_info: DepsConfig, dest_path: Path) -> None:
@@ -58,16 +57,16 @@ def copy_deps(deps_info: DepsConfig, dest_path: Path) -> None:
     dest_include_path.mkdir(parents=True, exist_ok=True)
     for include_dir in deps_info["tanker"].include_dirs:
         include_path = Path(include_dir)
-        ui.info_1(f"copying {include_dir} -> {dest_include_path}")
         for header in include_path.glob("**/*"):
             if header.is_dir():
                 continue
             rel_dir = header.parent.relative_to(include_dir)
             header_dest_dir = dest_include_path / rel_dir
             header_dest_dir.mkdir(parents=True, exist_ok=True)
+            ui.info_2(header, "->", header_dest_dir)
             shutil.copy(header, header_dest_dir)
     for source_lib in deps_info.all_lib_paths():
-        ui.info_1(f"copying {source_lib} -> {dest_lib_path}")
+        ui.info_2(f"copying {source_lib} -> {dest_lib_path}")
         shutil.copy(source_lib, dest_lib_path)
 
 
