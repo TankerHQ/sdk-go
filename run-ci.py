@@ -1,8 +1,9 @@
 import argparse
+from pathlib import Path
+import shutil
 import sys
 from typing import List, Optional
 
-from path import Path
 
 import tankerci
 from tankerci.conan import TankerSource
@@ -26,17 +27,17 @@ def generate_cgo_file(
     go_os: str,
     go_arch: str,
 ) -> None:
-    libs = installed_lib_paths
+    libs = [str(x) for x in installed_lib_paths]
     libs.extend([f"-l{lib}" for lib in lib_names])
     if go_os in ("linux", "windows"):
         libs.extend(["-static-libstdc++", "-static-libgcc"])
-    template_file = Path.getcwd() / "cgo_template.go.in"
+    template_file = Path.cwd() / "cgo_template.go.in"
     # having go_os and go_arch in the filename acts as an implicit build rule
     # e.g. only build cgo_linux_amd64.go on Linux amd64
-    dst_file = Path.getcwd() / "core" / f"cgo_{go_os}_{go_arch}.go"
+    dst_file = Path.cwd() / "core" / f"cgo_{go_os}_{go_arch}.go"
     ui.info_1(f"Generating {dst_file}")
-    template_file.copy(dst_file)
-    content = dst_file.text()
+    shutil.copy(template_file, dst_file)
+    content = dst_file.read_text()
     content = content.replace(
         "{{INCLUDEDIRS}}", " ".join([f"-I{dir}" for dir in installed_include_paths]),
     )
@@ -46,19 +47,27 @@ def generate_cgo_file(
 
 
 def copy_deps(deps_info: DepsConfig, dest_path: Path) -> None:
-    dest_path.rmtree_p()
+    if dest_path.exists():
+        shutil.rmtree(dest_path)
     ui.info_1(f"creating {dest_path}")
-    dest_path.makedirs_p()
+    dest_path.mkdir(parents=True, exist_ok=True)
     dest_lib_path = dest_path / "lib"
-    dest_lib_path.makedirs_p()
+    dest_lib_path.mkdir(parents=True, exist_ok=True)
     dest_include_path = dest_path / "include"
-    dest_include_path.makedirs_p()
+    dest_include_path.mkdir(parents=True, exist_ok=True)
     for include_dir in deps_info["tanker"].include_dirs:
-        ui.info_1(f"copying {include_dir} -> {dest_include_path}")
-        Path(include_dir).merge_tree(dest_include_path)
+        include_path = Path(include_dir)
+        for header in include_path.glob("**/*"):
+            if header.is_dir():
+                continue
+            rel_dir = header.parent.relative_to(include_dir)
+            header_dest_dir = dest_include_path / rel_dir
+            header_dest_dir.mkdir(parents=True, exist_ok=True)
+            ui.info_2(header, "->", header_dest_dir)
+            shutil.copy(header, header_dest_dir)
     for source_lib in deps_info.all_lib_paths():
-        ui.info_1(f"copying {source_lib} -> {dest_lib_path}")
-        source_lib.copy2(dest_lib_path)
+        ui.info_2(f"copying {source_lib} -> {dest_lib_path}")
+        shutil.copy(source_lib, dest_lib_path)
 
 
 def prepare(
@@ -69,7 +78,7 @@ def prepare(
 ) -> None:
     profile_prefix = profile.split("-")[0]
     go_os, go_arch = PROFILE_OS_ARCHS[profile_prefix]
-    conan_out = Path.getcwd() / "conan"
+    conan_out = Path.cwd() / "conan"
     if tanker_source == TankerSource.DEPLOYED and not tanker_ref:
         tanker_ref = "tanker/latest-stable@"
 
@@ -80,21 +89,24 @@ def prepare(
         update=update,
         tanker_deployed_ref=tanker_ref,
     )
-    conan_path = conan_out.dirs()[0]
+    conan_path = [x for x in conan_out.iterdir() if x.is_dir()][0]
     deps_info = DepsConfig(conan_path)
     go_install = Path("ctanker") / f"{go_os}-{go_arch}"
-    install_path = Path.getcwd() / "core" / go_install
+    install_path = Path.cwd() / "core" / go_install
 
     if tanker_source == TankerSource.DEPLOYED:
         copy_deps(deps_info, install_path)
         installed_include_path = install_path / "include"
         ui.info_1(f"cleaning {installed_include_path}")
-        with installed_include_path:
-            Path("Tanker").rmtree_p()
-            Path("Helpers").rmtree_p()
+        tanker_headers = installed_include_path / "Tanker"
+        helpers_headers = installed_include_path / "Helpers"
+        if tanker_headers.exists():
+            shutil.rmtree(tanker_headers)
+        if helpers_headers.exists():
+            shutil.rmtree(helpers_headers)
         generate_cgo_file(
             [Path("-L${SRCDIR}") / go_install / "lib"],
-            deps_info.all_libs(),
+            list(deps_info.all_libs()),
             [go_install / "include"],
             go_os,
             go_arch,
@@ -102,7 +114,7 @@ def prepare(
     else:
         generate_cgo_file(
             list(deps_info.all_lib_paths()),
-            deps_info.all_system_libs(),
+            list(deps_info.all_system_libs()),
             deps_info["tanker"].include_dirs,
             go_os,
             go_arch,
@@ -121,21 +133,21 @@ def build_and_test(
 
 def make_bump_commit(version: str):
     tankerci.bump.bump_files(version)
-    cwd = Path.getcwd()
+    cwd = Path.cwd()
     tankerci.git.run(cwd, "add", "--update")
-    cgo_sources = (cwd / "core").files("cgo_*.go")
+    cgo_sources = (cwd / "core").glob("cgo_*.go")
     for cgo_source in cgo_sources:
-        tankerci.git.run(cwd, "add", "--force", cgo_source)
-    ctanker_files = (cwd / "core/ctanker").walkfiles()
+        tankerci.git.run(cwd, "add", "--force", str(cgo_source))
+    ctanker_files = (cwd / "core/ctanker").glob("**/*")
     for ctanker_file in ctanker_files:
-        tankerci.git.run(cwd, "add", "--force", ctanker_file)
+        tankerci.git.run(cwd, "add", "--force", str(ctanker_file))
     tankerci.git.run(
         cwd, "commit", "--message", f"add binary files for version v{version}"
     )
 
 
 def deploy(*, version: str) -> None:
-    cwd = Path.getcwd()
+    cwd = Path.cwd()
     tag = "v" + version
     make_bump_commit(version)
     tankerci.git.run(cwd, "tag", tag)
